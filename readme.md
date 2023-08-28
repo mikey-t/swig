@@ -39,7 +39,7 @@ async function postBuild() {...}
 export const build = series(buildPrep, parallel(buildClient, buildServer), postBuild)
 ```
 
-Then we an run this with `swig build`. See below for various ways to execute `swig`.
+Then we can run this with `swig build`. See below for various ways to execute `swig`.
 
 ### Swig Installation: Global vs Package Local
 

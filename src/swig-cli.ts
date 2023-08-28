@@ -5,17 +5,15 @@ import fs from 'fs'
 import { pathToFileURL } from 'node:url'
 
 const isEsm = typeof __filename === 'undefined'
-console.log(`Running swig in ${isEsm ? 'ESM' : 'CommonJS'} mode`)
-
 const scriptStartTime = Date.now()
 const cwd = process.cwd()
-const taskFileNames = ['swigfile.cjs', 'swigfile.mjs', 'swigfile.js', 'swigfile.ts']
-const helpMessage = `No task provided. Use the 'list' command to see available tasks or check your swigfile exports.`
+const possibleTaskFileNames = ['swigfile.cjs', 'swigfile.mjs', 'swigfile.js', 'swigfile.ts']
+const helpMessage = `No task provided. Use the 'list' command to see available exported tasks from your swigfile.`
 
 /**
  * Tasks can be one of the following:
- *   - Any function that is async or returns a Promise can be used as a task and passed to series() or parallel().
- *   - An array of [name, Task] can be used to provide a name for anonymous async functions that match the above description.
+ *   - Any function that is async or returns a Promise.
+ *   - An array/tuple of [name, Task] can be used to provide a label for anonymous async functions.
  * 
  * Example using a tuple as one of the args: series(['task1', async () => { ... }], task2, task3)
  */
@@ -53,7 +51,7 @@ async function runTask(task: Task, taskNameFromNamedTask?: string) {
   const prefix = `${getTimestampPrefix(new Date(startTimestamp))} `
   const shouldLog = !!taskName && taskName !== 'series' && taskName !== 'parallel'
   if (shouldLog) {
-    console.log(`${prefix}Starting ${colors.lightCyan}${taskName}${colors.reset} ...`)
+    log(`${prefix}Starting ${cyan(taskName)} ...`)
   }
   if (Array.isArray(task)) {
     await task[1]()
@@ -62,7 +60,7 @@ async function runTask(task: Task, taskNameFromNamedTask?: string) {
   }
   const endTimestamp = Date.now()
   const duration = endTimestamp - startTimestamp
-  console.log(`${prefix}Finished ${colors.lightCyan}${taskName}${colors.reset} after ${colors.purple}${formatElapsedDuration(duration)}${colors.reset}`)
+  log(`${prefix}Finished ${cyan(taskName)} after ${purple(formatElapsedDuration(duration))}`)
 }
 
 function getTaskName(task: Task, taskNameFromNamedTask?: string) {
@@ -78,23 +76,51 @@ const colors = {
   red: '\x1b[31m',
   green: '\x1b[32m',
   yellow: '\x1b[33m',
-  lightCyan: '\x1b[96m',
+  cyan: '\x1b[96m',
   gray: '\x1b[90m',
   purple: '\x1b[35m'
 }
 
+function red(str: string) {
+  return color(str, colors.red)
+}
+
+function green(str: string) {
+  return color(str, colors.green)
+}
+
+function yellow(str: string) {
+  return color(str, colors.yellow)
+}
+
+function cyan(str: string) {
+  return color(str, colors.cyan)
+}
+
+function gray(str: string) {
+  return color(str, colors.gray)
+}
+
+function purple(str: string) {
+  return color(str, colors.purple)
+}
+
+function color(str: string, colorAnsiCode: string) {
+  return `${colorAnsiCode}${str}${colors.reset}`
+}
+
 function getTimestampPrefix(date: Date) {
-  return `[${colors.gray}${date.toLocaleTimeString('en-US', { hour12: true })}${colors.reset}]`
+  return `[${gray(date.toLocaleTimeString('en-US', { hour12: true }))}]`
 }
 
 function getFormattedStartMessage(taskName: string, startTimestamp: number) {
   const prefix = `${getTimestampPrefix(new Date(startTimestamp))} `
-  return `${prefix}Starting ${colors.lightCyan}${taskName}${colors.reset} ...`
+  return `${prefix}Starting ${cyan(taskName)} ...`
 }
 
 function getFormattedEndMessage(taskName: string, endTimestamp: number, duration: number) {
   const prefix = `${getTimestampPrefix(new Date(endTimestamp))} `
-  console.log(`${prefix}Finished ${colors.lightCyan}${taskName}${colors.reset} after ${colors.purple}${formatElapsedDuration(duration)}${colors.reset}`)
+  log(`${prefix}Finished ${cyan(taskName)} after ${purple(formatElapsedDuration(duration))}`)
 }
 
 function formatElapsedDuration(elapsedMs: number) {
@@ -105,37 +131,30 @@ function formatElapsedDuration(elapsedMs: number) {
   }
 }
 
-function failureExit(message?: string) {
-  if (message) {
-    console.error(`${colors.red}Error: ${colors.reset}${message}`)
-  }
-  process.exit(1)
-}
-
 function isListCommand(command: string) {
   return command === 'list' || command === 'ls' || command === 'l' || command === '--list' || command === '-l'
 }
 
 function showTaskList(tasks: any) {
   const taskNames = Object.keys(tasks)
-  console.log(`Available tasks:`)
+  log(`Available tasks:`)
   for (const taskName of taskNames) {
     const taskFn = tasks[taskName]
     if (typeof taskFn === 'function') {
-      console.log(`  ${colors.lightCyan}${taskName}${colors.reset}`)
+      log(`  ${cyan(taskName)}`)
     }
   }
 }
 
 function printFinishedMessage(divider: string, hasErrors: boolean) {
   const totalDuration = Date.now() - scriptStartTime
-  console.log(divider)
-  console.log(`Result: ${hasErrors ? colors.red + 'failed' : colors.green + 'success'}${colors.reset}`)
-  console.log(`Total duration: ${hasErrors ? colors.yellow : colors.green}${formatElapsedDuration(totalDuration)}${colors.reset}`)
+  log(divider)
+  log(`Result: ${hasErrors ? red('failed') : green('success')}`)
+  log(`Total duration: ${color(formatElapsedDuration(totalDuration), hasErrors ? colors.yellow : colors.green)}\n`)
 }
 
 function getTaskFilePath(): URL | string | null {
-  for (const filename of taskFileNames) {
+  for (const filename of possibleTaskFileNames) {
     const filePath = path.resolve(cwd, filename)
     if (fs.existsSync(filePath)) {
       if (isEsm) {
@@ -147,60 +166,74 @@ function getTaskFilePath(): URL | string | null {
   return null
 }
 
-async function main() {
-  if (process.argv.length < 3) {
-    return failureExit(helpMessage)
-  }
-  let taskName = process.argv[2]
-
-  if (!taskName) {
-    return failureExit(helpMessage)
-  } else {
-    console.log(`Running task '${taskName}'\n`)
-  }
-
-  const taskFile = getTaskFilePath()
-
-  if (!taskFile) {
-    return failureExit(`Task file not found (${taskFileNames.join(' or ')})`)
-  }
-
-  if (isListCommand(taskName)) {
-    taskName = 'list'
-  }
-
-  const swigFileMessage = `Swig: ${colors.purple}${taskFile}${colors.reset}`
-  const swigFileMessageLength = swigFileMessage.length - colors.purple.length - colors.reset.length
-  const taskMessage = `Task: ${colors.lightCyan}${taskName}${colors.reset}`
-  const taskMessageLength = taskMessage.length - colors.lightCyan.length - colors.reset.length
+function printStartMessageAndGetDivider(taskFilePath: string, cliParam: string): string {
+  const moduleTypeMessage = `\n    Mode: ${cyan(isEsm ? 'ESM' : 'CommonJS')}`
+  const swigFileMessage = `Swigfile: ${cyan(taskFilePath)}`
+  const swigFileMessageLength = swigFileMessage.length - colors.cyan.length - colors.reset.length
+  const taskMessage = `${cliParam === 'list' ? ' Command' : '    Task'}: ${cyan(cliParam)}`
+  const taskMessageLength = taskMessage.length - colors.cyan.length - colors.reset.length
   const divider = '-'.repeat(Math.max(swigFileMessageLength, taskMessageLength))
-  console.log(swigFileMessage)
-  console.log(taskMessage)
-  console.log(divider)
+  log(moduleTypeMessage)
+  log(swigFileMessage)
+  log(taskMessage)
+  log(divider)
+  return divider
+}
+
+function getCliParam(): string {
+  if (process.argv.length < 3) { failureExit(helpMessage) }
+  let command = process.argv[2]
+  if (!command) { failureExit(helpMessage) }
+  if (isListCommand(command)) { command = 'list' }
+  return command
+}
+
+function isFunction(task: any): boolean {
+  return !!task && typeof task === 'function'
+}
+
+function isSeriesOrParallel(task: Function) {
+  log('task name: ' + task.name)
+  log('typeof: ' + typeof task)
+  log(task.name)
+  log(Object.keys(task))
+  return task.name === 'series' || task.name === 'parallel'
+}
+
+function log(message?: any, ...optionalParams: any[]) {
+  console.log(message, ...optionalParams)
+}
+
+async function main() {
+  const cliParam = getCliParam()
+  const taskFilePathOrUrl: string | URL | null = getTaskFilePath() // string or URL to support both ESM and CJS
+  if (!taskFilePathOrUrl) {
+    return failureExit(`Task file not found - must be one of the following: ${possibleTaskFileNames.join(', ')}`)
+  }
+  const divider = printStartMessageAndGetDivider(taskFilePathOrUrl.toString(), cliParam)
 
   let tasks: any
   try {
-    tasks = await import(taskFile.toString())
+    tasks = await import(taskFilePathOrUrl.toString())
   } catch (err) {
     console.error(err)
-    failureExit(`Could not import task file ${taskFile}`)
-    return
+    return failureExit(`Could not import task file ${taskFilePathOrUrl}`)
   }
 
-  if (isListCommand(taskName)) {
+  if (isListCommand(cliParam)) {
     showTaskList(tasks)
     printFinishedMessage(divider, false)
-    process.exit(0)
+    okExit()
   }
 
-  if (!tasks || typeof tasks[taskName] !== 'function') {
-    failureExit(`Task '${taskName}' not found. Tasks must be exported functions in your swigfile.`)
-    return
+  const rootFunc = tasks[cliParam]
+  if (!tasks || !isFunction(rootFunc)) {
+    return failureExit(`Task '${cliParam}' not found. Tasks must be exported functions in your swigfile.`)
   }
 
   let hasErrors = false
   try {
-    await tasks[taskName]()
+    await rootFunc()
   } catch (err: any) {
     let label = 'Error'
     const isArrayOfErrors = Array.isArray(err)
@@ -209,7 +242,7 @@ async function main() {
     } else if (isArrayOfErrors && err.length > 1) {
       label = `Errors (${err.length})`
     }
-    console.log(`${colors.red}${label}${colors.reset}:`)
+    log(`${red(label)}:`)
     console.error(err)
     hasErrors = true
   } finally {
@@ -220,9 +253,15 @@ async function main() {
   }
 }
 
+function failureExit(message?: string) {
+  if (message) { console.error(`${red('Error: ')}${message}`) }
+  process.exit(1)
+}
+
+function okExit() {
+  process.exit(0)
+}
+
 main()
-  .then(() => process.exit(0))
-  .catch(err => {
-    console.error(err)
-    failureExit('An unexpected error occurred')
-  })
+  .then(() => okExit())
+  .catch(err => { console.error(err); failureExit('An unexpected error occurred') })
