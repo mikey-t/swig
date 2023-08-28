@@ -1,6 +1,6 @@
 {
   "name": "@mikeyt23/swig",
-  "version": "0.0.1-alpha.9",
+  "version": "0.0.1-alpha.10",
   "description": "Swig is a simple CLI tool for automating dev workflows via compositions of series and parallel tasks.",
   "repository": {
     "type": "git",
@@ -23,19 +23,14 @@
     "npmInstallAll": "npm install && node tasks.cjs npmInstallAll",
     "build": "node tasks.cjs cleanDist && npm run build:cjs && npm run build:esm",
     "watch": "tsc --watch",
+    "watch:cjs": "tsc --watch -p tsconfig.cjs.json",
     "build:cjs": "tsc --p tsconfig.cjs.json && node tasks.cjs updateCjsOutput",
     "build:esm": "tsc --p tsconfig.json",
     "cleanDist": "node tasks.cjs cleanDist",
     "pack": "node tasks.cjs cleanPackedDir && npm pack --pack-destination packed",
     "updateExamples": "node tasks.cjs cleanDist && npm run build && npm run pack && node tasks.cjs updateExampleDependencies",
-    "updateExamplesAndTest": "node tasks.cjs cleanDist && npm run build && npm run pack && node tasks.cjs updateExampleDependencies && node tasks.cjs test",
-    "updateEsmAndTest": "node tasks.cjs cleanDist && npm run build:esm && npm run pack && node tasks.cjs updateEsmExampleDependency && node tasks.cjs testEsm",
-    "updateCjsAndTest": "node tasks.cjs cleanDist && npm run build:cjs && npm run pack && node tasks.cjs updateCjsExampleDependency && node tasks.cjs testCjs",
-    "updateTsAndTest": "node tasks.cjs cleanDist && npm run build:cjs && npm run pack && node tasks.cjs updateTsExampleDependency && node tasks.cjs testTs",
-    "test": "node tasks.cjs test",
-    "testEsm": "node tasks.cjs testEsm",
-    "testCjs": "node tasks.cjs testCjs",
-    "testTs": "node tasks.cjs testTs"
+    "updateExamplesAndSmokeTest": "node tasks.cjs cleanDist && npm run build && npm run pack && node tasks.cjs updateExampleDependencies && node tasks.cjs smokeTest",
+    "smokeTest": "node tasks.cjs smokeTest"
   },
   "files": [
     "package.json",

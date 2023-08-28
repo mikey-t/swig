@@ -42,17 +42,17 @@ switch (task) {
   case 'cleanDist':
     cleanDist()
     break
-  case 'test':
-    test(allExamples)
+  case 'smokeTest':
+    smokeTest(allExamples)
     break
-  case 'testEsm':
-    test([ESM])
+  case 'smokeTestEsm':
+    smokeTest([ESM])
     break
-  case 'testCjs':
-    test([CJS])
+  case 'smokeTestCjs':
+    smokeTest([CJS])
     break
-  case 'testTs':
-    test([TS])
+  case 'smokeTestTs':
+    smokeTest([TS])
     break
   default:
     console.log(`- task not found: ${task}`)
@@ -114,7 +114,7 @@ function cleanDist() {
   fs.mkdirSync('./dist')
 }
 
-function test(examplesToTest) {
+function smokeTest(examplesToTest) {
   const results = []
   examplesToTest.forEach(exampleName => {
     results.push(testExample(exampleName))
@@ -133,10 +133,10 @@ function printTestResults(results) {
   results.forEach(result => {
     const exampleName = result[0]
     const spawnResult = result[1]
-    console.log('------------')
+    console.log('------------------')
     console.log(`- test output for ${exampleName}`)
     printSpawnResult(spawnResult)
-    console.log('------------')
+    console.log('------------------')
   })
   const failedResults = results.filter(result => result[1].status !== 0)
   if (failedResults.length > 0) {
