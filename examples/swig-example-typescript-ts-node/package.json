@@ -1,0 +1,20 @@
+{
+  "name": "swig-example-typescript-ts-node",
+  "version": "1.0.0",
+  "description": "Example usage of swig using typescript and ts-node.",
+  "scripts": {
+    "tsc": "tsc",
+    "swig": "ts-node -T ./node_modules/@mikeyt23/swig/dist/cjs/swig-cli.cjs"
+  },
+  "keywords": [],
+  "author": "Mike Thompson",
+  "license": "MIT",
+  "devDependencies": {
+    "@mikeyt23/swig": "file:../../packed/mikeyt23-swig-0.0.1-alpha.8.tgz",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.2.2"
+  },
+  "volta": {
+    "node": "18.17.1"
+  }
+}

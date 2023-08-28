@@ -1,0 +1,9 @@
+{
+    "[javascript]": {
+        "editor.autoIndent": "full",
+        "editor.trimAutoWhitespace": false
+    },
+    "cSpell.words": [
+        "swigfile"
+    ]
+}

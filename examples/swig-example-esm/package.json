@@ -1,0 +1,18 @@
+{
+  "name": "swig-example-esm",
+  "version": "1.0.0",
+  "description": "Example swig usage with an ESM project (package.json) and ESM swigfile.js.",
+  "type": "module",
+  "scripts": {
+    "swig": "swig"
+  },
+  "keywords": [],
+  "author": "Mike Thompson",
+  "license": "MIT",
+  "volta": {
+    "node": "18.17.1"
+  },
+  "devDependencies": {
+    "@mikeyt23/swig": "file:../../packed/mikeyt23-swig-0.0.1-alpha.8.tgz"
+  }
+}
