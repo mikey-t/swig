@@ -1,4 +1,4 @@
-import { parallel, series } from '@mikeyt23/swig'
+import { parallel, series } from 'swig-cli'
 
 async function task1() {
   // console.log('This is a console message from task1')
@@ -83,4 +83,34 @@ export const manyUseCases = series(
   //parallel(task9, task10, task11, task12),
   async () => { console.log('This is a console message from an anonymous task') },
   ['helloWorld', async () => { console.log('This is a console message from a named anonymous task called helloWorld') }]
+)
+
+const clientBuildDir = '...'
+const clientReleaseDir = ''
+const serverBuildDir = ''
+const serverReleaseDir = ''
+
+async function copyDirectory(src, target) { }
+async function prepBuild() { }
+async function buildServer() { }
+async function buildClient() { }
+
+async function doStuff() {
+  console.log('log message from doStuff')
+}
+
+export const yourTask = series(doStuff, async () => { console.log('This is a console message from an anonymous task') })
+
+export const buildWithoutLabelsOnAnon = series(
+  prepBuild,
+  parallel(buildClient, buildServer),
+  () => copyDirectory(clientBuildDir, clientReleaseDir),
+  () => copyDirectory(serverBuildDir, serverReleaseDir)
+)
+
+export const build = series(
+  prepBuild,
+  parallel(buildClient, buildServer),
+  ['copyClientBuild', () => copyDirectory(clientBuildDir, clientReleaseDir)],
+  ['copyServerBuild', () => copyDirectory(serverBuildDir, serverReleaseDir)]
 )

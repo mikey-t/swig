@@ -13,6 +13,6 @@
     "node": "18.17.1"
   },
   "devDependencies": {
-    "@mikeyt23/swig": "file:../../packed/mikeyt23-swig-0.0.1-alpha.10.tgz"
+    "swig-cli": "file:../../packed/swig-cli-0.0.1.tgz"
   }
 }

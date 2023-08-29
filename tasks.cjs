@@ -6,7 +6,8 @@ const TS_ESM = 'swig-example-typescript-esm'
 const CJS = 'swig-example-commonjs'
 const CJS_MJS = 'swig-example-commonjs-mjs'
 const ESM = 'swig-example-esm'
-const allExamples = [TS, TS_ESM, CJS, CJS_MJS, ESM]
+const ESM_CJS = 'swig-example-esm-cjs'
+const allExamples = [TS, TS_ESM, CJS, CJS_MJS, ESM, ESM_CJS]
 
 let task = process.argv[2]
 

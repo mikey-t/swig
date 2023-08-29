@@ -4,6 +4,7 @@
         "editor.trimAutoWhitespace": false
     },
     "cSpell.words": [
-        "swigfile"
+        "swigfile",
+        "swigfiles"
     ]
 }

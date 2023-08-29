@@ -1,4 +1,4 @@
-import { parallel, series } from '@mikeyt23/swig';
+import { parallel, series } from 'swig-cli';
 async function task1() {
     console.log('This is a console message from task1');
 }

@@ -1,8 +1,8 @@
 {
-  "name": "swig-example-commonjs",
+  "name": "swig-example-esm",
   "version": "1.0.0",
-  "description": "Example swig usage with a CommonJS project (package.json) and CommonJS swigfile.js.",
-  "type": "commonjs",
+  "description": "Example swig usage with an ESM project (package.json) and CJS swigfile.cjs.",
+  "type": "module",
   "scripts": {
     "swig": "swig-cjs"
   },
