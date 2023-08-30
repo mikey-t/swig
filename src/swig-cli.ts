@@ -135,7 +135,7 @@ function formatElapsedDuration(elapsedMs: number) {
 }
 
 function isListCommand(command: string) {
-  return command === 'list' || command === 'ls' || command === 'l' || command === '--list' || command === '-l'
+  return !command || command === 'list' || command === 'ls' || command === 'l' || command === '--list' || command === '-l'
 }
 
 function showTaskList(tasks: any) {
@@ -184,23 +184,13 @@ function printStartMessageAndGetDivider(taskFilePath: string, cliParam: string):
 }
 
 function getCliParam(): string {
-  if (process.argv.length < 3) { failureExit(helpMessage) }
   let command = process.argv[2]
-  if (!command) { failureExit(helpMessage) }
-  if (isListCommand(command)) { command = 'list' }
+  if (isListCommand(command)) { return 'list' }
   return command
 }
 
 function isFunction(task: any): boolean {
   return !!task && typeof task === 'function'
-}
-
-function isSeriesOrParallel(task: Function) {
-  log('task name: ' + task.name)
-  log('typeof: ' + typeof task)
-  log(task.name)
-  log(Object.keys(task))
-  return task.name === 'series' || task.name === 'parallel'
 }
 
 function log(message?: any, ...optionalParams: any[]) {

@@ -31,7 +31,7 @@
     "updateExamples": "node tasks.cjs cleanDist && npm run build && npm run pack && node tasks.cjs updateExampleDependencies",
     "updateExamplesAndSmokeTest": "node tasks.cjs cleanDist && npm run build && npm run pack && node tasks.cjs updateExampleDependencies && node tasks.cjs smokeTest",
     "smokeTest": "node tasks.cjs smokeTest",
-    "publishFull": "npm run build && npm updateExamplesAndSmokeTest && npm publish",
+    "publishFull": "npm run build && npm run updateExamplesAndSmokeTest && npm publish",
     "buildAndPublishOnly": "npm run build && npm publish",
     "publishOnly": "npm publish"
   },

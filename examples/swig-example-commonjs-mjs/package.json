@@ -13,6 +13,6 @@
     "node": "18.17.1"
   },
   "devDependencies": {
-    "swig-cli": "file:../../packed/swig-cli-0.0.1.tgz"
+    "swig-cli": "^0.0.1"
   }
 }
