@@ -1,6 +1,6 @@
 {
   "name": "swig-cli",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Swig is a simple CLI tool for automating dev workflows via compositions of series and parallel tasks.",
   "repository": {
     "type": "git",
@@ -9,20 +9,26 @@
   "type": "module",
   "exports": {
     ".": {
-      "import": "./dist/esm/swig-cli.js",
-      "require": "./dist/cjs/swig-cli.cjs"
+      "import": {
+        "types": "./dist/esm/index.d.ts",
+        "default": "./dist/esm/index.js"
+      },
+      "require": {
+        "types": "./dist/cjs/index.d.ts",
+        "default": "./dist/cjs/index.cjs"
+      }
     }
   },
-  "types": "dist/cjs/swig-cli.d.ts",
+  "main": "./dist/esm/index.js",
+  "types": "dist/esm/index.d.ts",
   "bin": {
-    "swig-cjs": "dist/cjs/swig-cli.cjs",
-    "swig": "dist/esm/swig-cli.js"
+    "swig-cjs": "dist/cjs/swigCli.cjs",
+    "swig": "dist/esm/swigCli.js"
   },
   "scripts": {
     "npmInstallAll": "npm install && node tasks.cjs npmInstallAll",
-    "build": "node tasks.cjs cleanDist && npm run build:cjs && npm run build:esm",
+    "build": "node tasks.cjs cleanDist && npm run build:cjs && npm run build:esm && node tasks.cjs insertVersionNumbers",
     "watch": "tsc --watch",
-    "watch:cjs": "tsc --watch -p tsconfig.cjs.json",
     "build:cjs": "tsc --p tsconfig.cjs.json && node tasks.cjs updateCjsOutput",
     "build:esm": "tsc --p tsconfig.json",
     "cleanDist": "node tasks.cjs cleanDist",

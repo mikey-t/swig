@@ -15,16 +15,17 @@
     "plugins": [
         "@typescript-eslint"
     ],
-    "ignorePatterns":[
+    "ignorePatterns": [
         "dist/",
         "examples/"
     ],
     "rules": {
         "@typescript-eslint/no-unused-vars": [
-            "error",
+            "warn",
             {
                 "argsIgnorePattern": "^_"
             }
-        ]
+        ],
+        "semi": "off"
     }
 }

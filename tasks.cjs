@@ -9,6 +9,10 @@ const CJS_MJS = 'swig-example-commonjs-mjs'
 const ESM = 'swig-example-esm'
 const ESM_CJS = 'swig-example-esm-cjs'
 const allExamples = [TS, TS_ESM, CJS, CJS_MJS, ESM, ESM_CJS]
+const primaryCodeFilenameEsm = 'Swig.js'
+const primaryCodeFilenameCjs = 'Swig.cjs'
+const cjsOutputDir = './dist/cjs'
+const esmOutputDir = './dist/esm'
 
 let task = process.argv[2]
 
@@ -55,6 +59,9 @@ switch (task) {
     break
   case 'smokeTestTs':
     smokeTest([TS])
+    break
+  case 'insertVersionNumbers':
+    insertVersionNumbers()
     break
   default:
     console.log(`- task not found: ${task}`)
@@ -163,28 +170,60 @@ function printSpawnResult(result) {
 }
 
 function updateCjsOutput() {
-  const cjsDir = './dist/cjs'
-  const filenames = fs.readdirSync(cjsDir)
+  const filenames = fs.readdirSync(cjsOutputDir)
   for (const filename of filenames) {
     if (!filename.includes('.js')) {
       continue
     }
-    const oldPath = `${cjsDir}/${filename}`
-    const newPath = `${cjsDir}/${filename.replace('.js', '.cjs')}`
+    const oldPath = `${cjsOutputDir}/${filename}`
+    const newPath = `${cjsOutputDir}/${filename.replace('.js', '.cjs')}`
     fs.renameSync(oldPath, newPath)
   }
-  const updatedFilenames = fs.readdirSync(cjsDir)
+
+  const updatedFilenames = fs.readdirSync(cjsOutputDir)
   for (const filename of updatedFilenames) {
-    updateCjsFileContents(cjsDir, filename)
+    updateCjsFileContents(cjsOutputDir, filename)
   }
+
+  const packageJson = fs.readFileSync('./package.cjs.json', 'utf8')
+  fs.writeFileSync(`${cjsOutputDir}/package.json`, packageJson, 'utf8')
 }
 
-// Replace all instances of '.js' with '.cjs'
+// Do replacements (except in special file where we only do one replacement):
+// .js" -> .cjs"
+// .js' -> .cjs'
+// .js.map -> .cjs.map
 function updateCjsFileContents(dir, filename) {
   const filePath = `${dir}/${filename}`
-  const fileContents = fs.readFileSync(filePath, 'utf8')
-  const newFileContents = fileContents.replace(/\.js/g, '.cjs')
+  let fileContents = fs.readFileSync(filePath, 'utf8')
+  let newFileContents = fileContents
+  if (filename !== primaryCodeFilenameCjs) {
+    newFileContents = newFileContents.replace(/\.js"/g, '.cjs"')
+    newFileContents = newFileContents.replace(/\.js'/g, '.cjs\'')
+  }
+  newFileContents = newFileContents.replace(/\.js\.map/g, '.cjs.map')
   fs.writeFileSync(filePath, newFileContents, 'utf8')
+}
+
+function insertVersionNumbers() {
+  const packageJson = fs.readFileSync('./package.json', 'utf8')
+  const packageJsonObj = JSON.parse(packageJson)
+  const version = packageJsonObj.version
+
+  const esmFile = `${esmOutputDir}/${primaryCodeFilenameEsm}`
+  const cjsFile = `${cjsOutputDir}/${primaryCodeFilenameCjs}`
+
+  insertVersionNumber(esmFile, version)
+  insertVersionNumber(cjsFile, version)
+}
+
+function insertVersionNumber(file, version) {
+  let fileContents = fs.readFileSync(file, 'utf8')
+  if (!fs.existsSync(file)) {
+    console.log(`skipped inserting version because of missing file: ${file}`)
+  }
+  fileContents = fileContents.replace(/__VERSION__/g, version)
+  fs.writeFileSync(file, fileContents, 'utf8')
 }
 
 function exit(exitCode, message) {

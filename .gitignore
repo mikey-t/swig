@@ -4,3 +4,4 @@ build
 *.tar.gz
 *.tgz
 dist
+packed

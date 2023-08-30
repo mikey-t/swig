@@ -34,7 +34,7 @@ Reminder to setup better way of quickly testing individual examples, such as wit
 
 ## TODO
 
-- Come back and make the automated tasks for this project better (maybe wire up swig to test swig!?)
+- Come back and make the automated tasks for this project better (maybe wire up swig to test swig!? or, you know... Jest)
 - Setup unit testing (integration testing really) and add tests (see notes for list of needed tests I've kept track of so far)
 - Test with different versions of NodeJS
-- Research options for automatically transpiling a typescript swigfile - maybe even conditionally depending on whether there's changes - that'd be neat
+- Research options for automatically transpiling a typescript swigfile and running that version instead - maybe even conditionally depending on whether there's changes - that'd be neat

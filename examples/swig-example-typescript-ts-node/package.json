@@ -4,13 +4,13 @@
   "description": "Example usage of swig using typescript and ts-node.",
   "scripts": {
     "tsc": "tsc",
-    "swig": "ts-node -T ./node_modules/swig-cli/dist/cjs/swig-cli.cjs"
+    "swig": "ts-node -T ./node_modules/swig-cli/dist/cjs/swigCli.cjs"
   },
   "keywords": [],
   "author": "Mike Thompson",
   "license": "MIT",
   "devDependencies": {
-    "swig-cli": "file:../../packed/swig-cli-0.0.2.tgz",
+    "swig-cli": "file:../../packed/swig-cli-0.0.3.tgz",
     "ts-node": "^10.9.1",
     "typescript": "^5.2.2"
   },
