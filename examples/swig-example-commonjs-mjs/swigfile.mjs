@@ -90,6 +90,7 @@ const clientReleaseDir = ''
 const serverBuildDir = ''
 const serverReleaseDir = ''
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function copyDirectory(src, target) { }
 async function prepBuild() { }
 async function buildServer() { }

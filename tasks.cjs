@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-var-requires */
 const { spawnSync } = require('child_process')
 const fs = require('fs')
 
@@ -163,28 +164,27 @@ function printSpawnResult(result) {
 
 function updateCjsOutput() {
   const cjsDir = './dist/cjs'
-  const files = fs.readdirSync(cjsDir)
-  if (!!files) {
-    for (const file of files) {
-      if (!file.includes('.js')) {
-        continue
-      }
-      const oldPath = `${cjsDir}/${file}`
-      const newPath = `${cjsDir}/${file.replace('.js', '.cjs')}`
-      fs.renameSync(oldPath, newPath)
+  const filenames = fs.readdirSync(cjsDir)
+  for (const filename of filenames) {
+    if (!filename.includes('.js')) {
+      continue
     }
+    const oldPath = `${cjsDir}/${filename}`
+    const newPath = `${cjsDir}/${filename.replace('.js', '.cjs')}`
+    fs.renameSync(oldPath, newPath)
   }
-  // Update swig-cli.cjs.map contents (swig-cli.js -> swig-cli.cjs)
-  const mapPath = `${cjsDir}/swig-cli.cjs.map`
-  const mapContents = fs.readFileSync(mapPath, 'utf8')
-  const newMapContents = mapContents.replace('swig-cli.js', 'swig-cli.cjs')
-  fs.writeFileSync(mapPath, newMapContents, 'utf8')
+  const updatedFilenames = fs.readdirSync(cjsDir)
+  for (const filename of updatedFilenames) {
+    updateCjsFileContents(cjsDir, filename)
+  }
+}
 
-  // Update swig-cli.cjs contents (swig-cli.js.map -> swig-cli.cjs.map)
-  const cjsPath = `${cjsDir}/swig-cli.cjs`
-  const cjsContents = fs.readFileSync(cjsPath, 'utf8')
-  const newCjsContents = cjsContents.replace('swig-cli.js.map', 'swig-cli.cjs.map')
-  fs.writeFileSync(cjsPath, newCjsContents, 'utf8')
+// Replace all instances of '.js' with '.cjs'
+function updateCjsFileContents(dir, filename) {
+  const filePath = `${dir}/${filename}`
+  const fileContents = fs.readFileSync(filePath, 'utf8')
+  const newFileContents = fileContents.replace(/\.js/g, '.cjs')
+  fs.writeFileSync(filePath, newFileContents, 'utf8')
 }
 
 function exit(exitCode, message) {

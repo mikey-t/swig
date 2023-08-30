@@ -10,7 +10,7 @@
   "author": "Mike Thompson",
   "license": "MIT",
   "devDependencies": {
-    "swig-cli": "file:../../packed/swig-cli-0.0.1.tgz",
+    "swig-cli": "file:../../packed/swig-cli-0.0.2.tgz",
     "ts-node": "^10.9.1",
     "typescript": "^5.2.2"
   },

@@ -4,11 +4,18 @@ import * as path from 'path'
 import fs from 'fs'
 import { pathToFileURL } from 'node:url'
 
-const isEsm = typeof __filename === 'undefined'
-const scriptStartTime = Date.now()
-const cwd = process.cwd()
-const possibleTaskFileNames = ['swigfile.cjs', 'swigfile.mjs', 'swigfile.js', 'swigfile.ts']
-const helpMessage = `No task provided. Use the 'list' command to see available exported tasks from your swigfile.`
+const isCommonJS = typeof require === "function" && typeof module === "object" && module.exports
+const isEsm = !isCommonJS
+let getFilename: () => string
+if (isEsm) {
+  import('./esmSpecific.mjs').then(esmSpecific => {
+    getFilename = esmSpecific.getFilename
+  })
+} else {
+  getFilename = () => __filename
+}
+let _filename: string
+let _dirname: string
 
 /**
  * Tasks can be one of the following:
@@ -17,11 +24,24 @@ const helpMessage = `No task provided. Use the 'list' command to see available e
  * 
  * Example, including tuple use: series(['task1', async () => { ... }], task2, task3)
  */
-export type Task = () => Promise<any>
+export type Task = () => Promise<unknown>
 export type NamedTask = [string, Task]
 export type TaskOrNamedTask = Task | NamedTask
 interface LogNameAndTask { logName: string, task: Task }
+interface CommandDescriptor { names: string[], description: string, example: string }
+interface CliParam { value: string, isCommand: boolean }
+type TasksMap = [string, (() => void | Promise<void>)][]
 
+const scriptStartTime = Date.now()
+const cwd = process.cwd()
+const possibleTaskFileNames = ['swigfile.cjs', 'swigfile.mjs', 'swigfile.js', 'swigfile.ts']
+const commandDescriptors: CommandDescriptor[] = [
+  { names: ['<taskName>'], description: 'Run a task', example: 'swig taskName' },
+  { names: ['list', 'ls', 'l'], description: 'List available tasks (default)', example: 'swig list' },
+  { names: ['help', 'h'], description: 'Show help message', example: 'swig help' },
+  { names: ['version', 'v'], description: 'Show version number', example: 'swig version' },
+  { names: ['filter', 'f'], description: 'Filter and list tasks by name', example: 'swig filter pattern' },
+]
 let seriesCounter = 1
 let parallelCounter = 1
 
@@ -74,44 +94,6 @@ function getLogNameAndTask(taskOrNamedTask: TaskOrNamedTask): LogNameAndTask {
   }
 }
 
-const colors = {
-  reset: '\x1b[0m',
-  red: '\x1b[31m',
-  green: '\x1b[32m',
-  yellow: '\x1b[33m',
-  cyan: '\x1b[96m',
-  gray: '\x1b[90m',
-  purple: '\x1b[35m'
-}
-
-function red(str: string) {
-  return color(str, colors.red)
-}
-
-function green(str: string) {
-  return color(str, colors.green)
-}
-
-function yellow(str: string) {
-  return color(str, colors.yellow)
-}
-
-function cyan(str: string) {
-  return color(str, colors.cyan)
-}
-
-function gray(str: string) {
-  return color(str, colors.gray)
-}
-
-function purple(str: string) {
-  return color(str, colors.purple)
-}
-
-function color(str: string, colorAnsiCode: string) {
-  return `${colorAnsiCode}${str}${colors.reset}`
-}
-
 function getTimestampPrefix(date: Date) {
   return `[${gray(date.toLocaleTimeString('en-US', { hour12: true }))}]`
 }
@@ -134,26 +116,38 @@ function formatElapsedDuration(elapsedMs: number) {
   }
 }
 
-function isListCommand(command: string) {
-  return !command || command === 'list' || command === 'ls' || command === 'l' || command === '--list' || command === '-l'
+const colors = {
+  reset: '\x1b[0m',
+  red: '\x1b[31m',
+  green: '\x1b[32m',
+  yellow: '\x1b[33m',
+  cyan: '\x1b[96m',
+  gray: '\x1b[90m',
+  purple: '\x1b[35m'
 }
 
-function showTaskList(tasks: any) {
-  const taskNames = Object.keys(tasks)
-  log(`Available tasks:`)
-  for (const taskName of taskNames) {
-    const taskFn = tasks[taskName]
-    if (typeof taskFn === 'function') {
-      log(`  ${cyan(taskName)}`)
-    }
-  }
+function red(str: string) {
+  return color(str, colors.red)
 }
 
-function printFinishedMessage(divider: string, hasErrors: boolean) {
-  const totalDuration = Date.now() - scriptStartTime
-  log(divider)
-  log(`Result: ${hasErrors ? red('failed') : green('success')}`)
-  log(`Total duration: ${color(formatElapsedDuration(totalDuration), hasErrors ? colors.yellow : colors.green)}\n`)
+function green(str: string) {
+  return color(str, colors.green)
+}
+
+function cyan(str: string) {
+  return color(str, colors.cyan)
+}
+
+function gray(str: string) {
+  return color(str, colors.gray)
+}
+
+function purple(str: string) {
+  return color(str, colors.purple)
+}
+
+function color(str: string, colorAnsiCode: string) {
+  return `${colorAnsiCode}${str}${colors.reset}`
 }
 
 function getTaskFilePath(): URL | string | null {
@@ -169,79 +163,160 @@ function getTaskFilePath(): URL | string | null {
   return null
 }
 
-function printStartMessageAndGetDivider(taskFilePath: string, cliParam: string): string {
-  const moduleTypeMessage = `\n    Mode: ${cyan(isEsm ? 'ESM' : 'CommonJS')}`
-  const swigFileMessage = `Swigfile: ${cyan(taskFilePath)}`
-  const swigFileMessageLength = swigFileMessage.length - colors.cyan.length - colors.reset.length
-  const taskMessage = `${cliParam === 'list' ? ' Command' : '    Task'}: ${cyan(cliParam)}`
-  const taskMessageLength = taskMessage.length - colors.cyan.length - colors.reset.length
-  const divider = '-'.repeat(Math.max(swigFileMessageLength, taskMessageLength))
-  log(moduleTypeMessage)
-  log(swigFileMessage)
-  log(taskMessage)
-  log(divider)
-  return divider
+function getStartMessage(taskFilePath: string, cliParam: CliParam): string {
+  const commandOrTaskMessage = cliParam.isCommand ? 'Command' : 'Task'
+  const helpMessage = `${gray('use ')}swig help ${gray('for more info')}`
+  const taskFilename = path.basename(taskFilePath)
+  const modeMessage = `Mode: ${cyan(isEsm ? 'ESM' : 'CommonJS')}`
+  return `[ ${commandOrTaskMessage}: ${cyan(cliParam.value)} ][ Swigfile: ${cyan(taskFilename)} ][ ${modeMessage} ] ${helpMessage}`
 }
 
-function getCliParam(): string {
-  let command = process.argv[2]
-  if (isListCommand(command)) { return 'list' }
-  return command
+function getFinishedMessage(hasErrors?: boolean): string {
+  const totalDuration = Date.now() - scriptStartTime
+  const statusMessage = `Result: ${hasErrors ? red('failed') : green('success')}`
+  const durationMessage = `Total duration: ${color(formatElapsedDuration(totalDuration), hasErrors ? colors.yellow : colors.green)}`
+  return `[ ${statusMessage} ][ ${durationMessage} ]`
 }
 
-function isFunction(task: any): boolean {
+function getCliParam(): CliParam {
+  const cliArg = process.argv[2]
+  if (!cliArg) {
+    return { value: 'list', isCommand: true }
+  }
+  const commandDescriptor = commandDescriptors.find(d => d.names.includes(cliArg.toLowerCase()))
+  if (commandDescriptor) {
+    return { value: commandDescriptor.names[0], isCommand: true }
+  }
+
+  // Ensure it only has characters that are valid for a function name
+  const cleaned = cliArg.replace(/[^a-zA-Z0-9_]/g, '')
+  if (cleaned !== cliArg) {
+    failureExit(`Invalid task name: ${cliArg}`)
+  }
+
+  return { value: cliArg, isCommand: false }
+}
+
+function isFunction(task: unknown): boolean {
   return !!task && typeof task === 'function'
 }
 
-function log(message?: any, ...optionalParams: any[]) {
+function log(message?: unknown, ...optionalParams: unknown[]) {
   console.log(message, ...optionalParams)
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function trace(message?: unknown, ...optionalParams: unknown[]) {
+  console.log(message, ...optionalParams)
+}
+
+function showTaskList(tasks: TasksMap, filter?: string) {
+  const taskNames = tasks.map(([name, _]) => name)
+  log(`Available tasks:`)
+  for (const taskName of taskNames) {
+    const taskFn = tasks.find(([name, _]) => name === taskName)?.[1]
+    if (typeof taskFn === 'function') {
+      if (filter && !taskName.toLowerCase().includes(filter.toLowerCase())) {
+        continue
+      }
+      log(`  ${cyan(taskName)}`)
+    }
+  }
+  log(getFinishedMessage())
+  return okExit()
+}
+
+function showHelpMessage() {
+  log(`Usage: swig <command> [options]`)
+  log(`Commands:`)
+  for (const commandDescriptor of commandDescriptors) {
+    log(`  ${commandDescriptor.names.join(', ')} ${gray(commandDescriptor.description)}`)
+    log(`    ${gray(commandDescriptor.example)}`)
+  }
+  return okExit()
+}
+
+function showVersionMessage() {
+  const packageJsonPath = path.resolve(_dirname, '../../package.json')
+  if (!packageJsonPath) {
+    return failureExit(`Could not find package.json to get version number`)
+  }
+  const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'))
+  log(`${packageJson.version}`)
+  return okExit()
+}
+
+function getFunc(tasks: TasksMap, taskName: string) {
+  return tasks.find(([name, _]) => name === taskName)?.[1]
+}
+
 async function main() {
-  const cliParam = getCliParam()
+  const cliParam: CliParam = getCliParam()
 
   const taskFilePathOrUrl: string | URL | null = getTaskFilePath() // string or URL to support both ESM and CJS
 
   if (!taskFilePathOrUrl) {
     return failureExit(`Task file not found - must be one of the following: ${possibleTaskFileNames.join(', ')}`)
   }
-  const divider = printStartMessageAndGetDivider(taskFilePathOrUrl.toString(), cliParam)
 
-  let tasks: any
+  if (cliParam.value !== 'version') {
+    log(getStartMessage(taskFilePathOrUrl.toString(), cliParam))
+  }
+
+  let module: object
+  let tasks: TasksMap
   try {
-    tasks = await import(taskFilePathOrUrl.toString())
+    module = await import(taskFilePathOrUrl.toString())
+    tasks = Object.entries(module).filter(([_, value]) => isFunction(value))
   } catch (err) {
     console.error(err)
     return failureExit(`Could not import task file ${taskFilePathOrUrl}`)
   }
 
-  if (isListCommand(cliParam)) {
-    showTaskList(tasks)
-    printFinishedMessage(divider, false)
-    okExit()
+  if (cliParam.value === 'list') {
+    return showTaskList(tasks)
+  }
+  if (cliParam.value === 'help') {
+    return showHelpMessage()
+  }
+  if (cliParam.value === 'version') {
+    return showVersionMessage()
+  }
+  if (cliParam.value === 'filter') {
+    const filter = process.argv[3]
+    return showTaskList(tasks, filter)
   }
 
-  const rootFunc = tasks[cliParam]
-  if (!tasks || !isFunction(rootFunc)) {
-    return failureExit(`Task '${cliParam}' not found. Tasks must be exported functions in your swigfile.`)
+  const rootFunc = getFunc(tasks, cliParam.value)
+  if (!rootFunc) {
+    return failureExit(`Task '${cliParam.value}' not found. Tasks must be exported functions in your swigfile. Try 'swig list' to see available tasks.`)
   }
 
   let hasErrors = false
   try {
     await rootFunc()
-  } catch (err: any) {
-    let label = 'Error'
-    const isArrayOfErrors = Array.isArray(err)
-    if (isArrayOfErrors && err.length === 1) {
-      err = err[0]
-    } else if (isArrayOfErrors && err.length > 1) {
-      label = `Errors (${err.length})`
-    }
-    log(red(label))
-    console.error(err)
+  } catch (rawErr: unknown) {
     hasErrors = true
+    let label = 'Error'
+    let err = rawErr
+
+    if (Array.isArray(err)) {
+      if (err.length === 1) {
+        err = err[0]
+      } else if (err.length > 1) {
+        label = `Errors (${err.length})`
+      }
+    }
+
+    log(red(label))
+
+    if (err instanceof Error) {
+      console.error(err.message)
+    } else {
+      console.error(err)
+    }
   } finally {
-    printFinishedMessage(divider, hasErrors)
+    log(getFinishedMessage(hasErrors))
     if (hasErrors) {
       failureExit()
     }
@@ -257,6 +332,27 @@ function okExit() {
   process.exit(0)
 }
 
-main()
-  .then(() => okExit())
-  .catch(err => { console.error(err); failureExit('An unexpected error occurred') })
+const runMain = async () => {
+  try {
+    await main()
+    okExit()
+  } catch (err) {
+    console.error(err)
+    failureExit('An unexpected error occurred')
+  }
+}
+
+const loadEsmSpecific = async () => {
+  if (isEsm) {
+    const module = await import('./esmSpecific.mjs')
+    getFilename = module.getFilename
+  } else {
+    getFilename = () => __filename
+  }
+  _filename = getFilename()
+  _dirname = path.dirname(_filename)
+}
+
+if ((isCommonJS && require.main === module) || isEsm) {
+  loadEsmSpecific().then(() => runMain())
+}
