@@ -1,6 +1,6 @@
 {
   "name": "swig-cli",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Swig is a simple CLI tool for automating dev workflows via compositions of series and parallel tasks.",
   "repository": {
     "type": "git",
@@ -26,18 +26,17 @@
     "swig": "dist/esm/swigCli.js"
   },
   "scripts": {
-    "npmInstallAll": "npm install && node tasks.cjs npmInstallAll",
-    "build": "node tasks.cjs cleanDist && npm run build:cjs && npm run build:esm && node tasks.cjs insertVersionNumbers",
+    "npmInstallAll": "npm install && node tasks.js npmInstallAll",
+    "build": "node tasks.js cleanDist && npm run build:cjs && npm run build:esm && node tasks.js insertVersionNumbers",
     "watch": "tsc --watch",
-    "build:cjs": "tsc --p tsconfig.cjs.json && node tasks.cjs updateCjsOutput",
+    "build:cjs": "tsc --p tsconfig.cjs.json && node tasks.js updateCjsOutput",
     "build:esm": "tsc --p tsconfig.json",
-    "cleanDist": "node tasks.cjs cleanDist",
-    "pack": "node tasks.cjs cleanPackedDir && npm pack --pack-destination packed",
-    "updateExamples": "node tasks.cjs cleanDist && npm run build && npm run pack && node tasks.cjs updateExampleDependencies",
-    "updateExamplesAndSmokeTest": "node tasks.cjs cleanDist && npm run build && npm run pack && node tasks.cjs updateExampleDependencies && node tasks.cjs smokeTest",
-    "smokeTest": "node tasks.cjs smokeTest",
-    "publishFull": "npm run build && npm run updateExamplesAndSmokeTest && npm publish",
-    "buildAndPublishOnly": "npm run build && npm publish",
+    "watchTasks": "tsc --watch --p tsconfig.tasks.json",
+    "cleanDist": "node tasks.js cleanDist",
+    "pack": "node tasks.js cleanPackedDir && npm pack --pack-destination packed",
+    "updateExamples": "npm run build && npm run pack && node tasks.js updateExampleDependencies",
+    "updateExamplesAndSmokeTest": "npm run updateExamples && node tasks.js smokeTest",
+    "smokeTest": "node tasks.js smokeTest",
     "publishOnly": "npm publish"
   },
   "files": [
@@ -68,7 +67,7 @@
     "node": "18.17.1"
   },
   "devDependencies": {
-    "@types/node": "^20.5.6",
+    "@types/node": "^20.5.7",
     "@typescript-eslint/eslint-plugin": "^6.5.0",
     "@typescript-eslint/parser": "^6.5.0",
     "eslint": "^8.48.0",

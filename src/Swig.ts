@@ -44,9 +44,24 @@ export type NamedTask = [string, Task]
 export type TaskOrNamedTask = Task | NamedTask
 
 interface LogNameAndTask { logName: string, task: Task }
-interface CommandDescriptor { names: string[], description: string, example: string }
-interface CliParam { value: string, isCommand: boolean }
+
+interface CommandDescriptor { id: string, names: string[], alternateNames: string[], description: string, example: string }
+
 type TasksMap = [string, (() => void | Promise<void>)][]
+
+class CliParam {
+  value: string
+  isCommand: boolean
+
+  constructor(value: string, isCommand: boolean) {
+    this.value = value
+    this.isCommand = isCommand
+  }
+
+  matches: (commandDescriptor: CommandDescriptor) => boolean = (commandDescriptor: CommandDescriptor) => {
+    return this.value === commandDescriptor.id
+  }
+}
 
 export default class Swig {
   isCommonJS = typeof require === "function" && typeof module === "object" && module.exports
@@ -56,12 +71,18 @@ export default class Swig {
   private _seriesCounter = 1
   private _parallelCounter = 1
   private _possibleTaskFileNames = ['swigfile.cjs', 'swigfile.mjs', 'swigfile.js', 'swigfile.ts']
+  private _listCommand = { id: 'list', names: ['list', 'ls', 'l'], alternateNames: ['-l', '--list'], description: 'List available tasks (default)', example: 'swig list' }
+  private _helpCommand = { id: 'help', names: ['help', 'h'], alternateNames: ['-h', '--help'], description: 'Show help message', example: 'swig help' }
+  private _versionCommand = { id: 'version', names: ['version', 'v'], alternateNames: ['-v', '--version'], description: 'Print version number', example: 'swig version' }
+  private _filterCommand = { id: 'filter', names: ['filter', 'f'], alternateNames: ['-f', '--filter'], description: 'Filter and list tasks by name', example: 'swig filter pattern' }
+  private _generateWrapperFilesCommand = { id: 'generateWrapperFiles', names: ['generateWrapperFiles', 'gw'], alternateNames: [], description: 'Generate wrapper files swig and swig.bat (optionally pass additional param \'ts-node\')', example: 'swig gw\n    swig gw ts-node' }
   private _commandDescriptors: CommandDescriptor[] = [
-    { names: ['<taskName>'], description: 'Run a task, whish is an async function exported from your swigfile that returns a Task', example: 'swig functionName' },
-    { names: ['list', 'ls', 'l'], description: 'List available tasks (default)', example: 'swig list' },
-    { names: ['help', 'h'], description: 'Show help message', example: 'swig help' },
-    { names: ['version', 'v'], description: 'Print version number', example: 'swig version' },
-    { names: ['filter', 'f'], description: 'Filter and list tasks by name', example: 'swig filter pattern' },
+    { id: 'task', names: ['<taskName>'], alternateNames: [], description: 'Run a task, whish is an async function exported from your swigfile that returns a Task', example: 'swig functionName' },
+    this._listCommand,
+    this._helpCommand,
+    this._versionCommand,
+    this._filterCommand
+    // this._generateWrapperFilesCommand
   ]
 
   constructor() { }
@@ -208,7 +229,7 @@ export default class Swig {
   private getStartMessage(taskFilePath: string, cliParam: CliParam): string {
     const commandOrTaskMessage = cliParam.isCommand ? 'Command' : 'Task'
     const helpMessage = `${this.gray('use ')}swig help ${this.gray('for more info')}`
-    const taskFilename = path.basename(taskFilePath)
+    const taskFilename = taskFilePath ? path.basename(taskFilePath) : ''
     const modeMessage = `[ Mode: ${this.cyan(this.isEsm ? 'ESM' : 'CommonJS')} ]` // This may be useful in the future
     const versionMessage = `Version: ${this.cyan(this._versionString)}`
     return `[ ${commandOrTaskMessage}: ${this.cyan(cliParam.value)} ][ Swigfile: ${this.cyan(taskFilename)} ][ ${versionMessage} ]${showMode ? modeMessage : ''} ${helpMessage}`
@@ -225,29 +246,20 @@ export default class Swig {
     const cliArg = process.argv[2]
 
     if (!cliArg) {
-      return { value: 'list', isCommand: true }
+      return new CliParam(this._listCommand.id, true)
     }
 
-    const commandDescriptor = this._commandDescriptors.find(d => d.names.includes(cliArg.toLowerCase()))
+    const commandDescriptor = this._commandDescriptors.find(d => d.names.includes(cliArg.toLowerCase()) || d.alternateNames.includes(cliArg.toLowerCase()))
     if (commandDescriptor) {
-      return { value: commandDescriptor.names[0], isCommand: true }
+      return new CliParam(commandDescriptor.id, true)
     }
 
-    if (this.isCliArgAlternateVersion(cliArg)) {
-      return { value: 'version', isCommand: true }
-    }
-
-    // Ensure it only has characters that are valid for a function name
-    const cleaned = cliArg.replace(/[^a-zA-Z0-9_]/g, '')
-    if (cleaned !== cliArg) {
+    const argWithInvalidFunctionCharsStripped = cliArg.replace(/[^a-zA-Z0-9_]/g, '')
+    if (argWithInvalidFunctionCharsStripped !== cliArg) {
       this.failureExit(`Invalid task name: ${cliArg}`)
     }
 
-    return { value: cliArg, isCommand: false }
-  }
-
-  private isCliArgAlternateVersion(cliArg: string): boolean {
-    return ['-v', '--version', '-version'].includes(cliArg.toLowerCase())
+    return new CliParam(cliArg, false)
   }
 
   private isFunction(task: unknown): boolean {
@@ -285,8 +297,33 @@ export default class Swig {
     return this.okExit()
   }
 
-  private getFunc(tasks: TasksMap, taskName: string) {
+  private getFuncByTaskName(tasks: TasksMap, taskName: string) {
     return tasks.find(([name, _]) => name === taskName)?.[1]
+  }
+
+  private generateWrapperFiles() {
+    const batFilename = 'swig.bat'
+    const shFilename = 'swig'
+    const helpMessage = `Run this script with 'help' param for more info`
+    const isTsNode = process.argv[3] === 'ts-node'
+
+    const bat = `@echo off\nREM ${helpMessage}\nnode ./node_modules/swig-cli/dist/esm/swigCli.js %*`
+    const sh = `#!/bin/bash\n# ${helpMessage}\nnode ./node_modules/swig-cli/dist/esm/swigCli.js $@`
+
+    const tsNodeBat = `@echo off\nREM ${helpMessage}\nnode ./node_modules/.bin/ts-node -T ./node_modules/swig-cli/dist/cjs/swigCli.cjs %*`
+    const tsNodeSh = `#!/bin/bash\n# ${helpMessage}\nnode ./node_modules/.bin/ts-node -T ./node_modules/swig-cli/dist/cjs/swigCli.cjs $@`
+
+    const batPath = path.resolve(this._cwd, batFilename)
+    const shPath = path.resolve(this._cwd, shFilename)
+
+    fs.writeFileSync(batPath, isTsNode ? tsNodeBat : bat, { encoding: 'utf8' })
+    fs.writeFileSync(shPath, isTsNode ? tsNodeSh : sh, { encoding: 'utf8' })
+
+    const additionalTsMessage = isTsNode ? ' pointing to ts-node' : ''
+    log(`Generated wrapper files ${this.cyan(shFilename)} and ${this.cyan(batFilename)}${additionalTsMessage}`)
+    log(`Don't forget to run '${this.cyan('chmod +x swig')}' to make swig executable if you are on Linux or Mac`)
+
+    return this.okExit()
   }
 
   private async main() {
@@ -296,12 +333,22 @@ export default class Swig {
 
     const taskFilePathOrUrl: string | URL | null = this.getTaskFilePath() // string or URL to support both ESM and CJS
 
-    if (!taskFilePathOrUrl) {
-      return this.failureExit(`Task file not found - must be one of the following: ${this._possibleTaskFileNames.join(', ')}`)
+    if (cliParam.value === this._versionCommand.id) {
+      return this.showVersionMessage()
     }
 
-    if (cliParam.value !== 'version') {
-      log(this.getStartMessage(taskFilePathOrUrl.toString(), cliParam))
+    log(this.getStartMessage(taskFilePathOrUrl ? taskFilePathOrUrl.toString() : '', cliParam))
+
+    if (cliParam.value === this._helpCommand.id) {
+      return this.showHelpMessage()
+    }
+
+    if (cliParam.matches(this._generateWrapperFilesCommand)) {
+      return this.generateWrapperFiles()
+    }
+
+    if (!taskFilePathOrUrl) {
+      return this.failureExit(`Task file not found - must be one of the following: ${this._possibleTaskFileNames.join(', ')}`)
     }
 
     let module: object
@@ -310,25 +357,27 @@ export default class Swig {
       module = await import(taskFilePathOrUrl.toString())
       tasks = Object.entries(module).filter(([_, value]) => this.isFunction(value))
     } catch (err) {
-      console.error(err)
+      if (err instanceof Error) {
+        if (err.message.includes('Cannot find module') || err.message.includes('Cannot find package')) {
+          return this.failureExit(`Error importing swig-cli from within ${this.cyan(path.basename(taskFilePathOrUrl.toString()))}\nMake sure you have installed the dependency swig-cli in your project: npm i -D swig-cli`)
+        } else {
+          console.error(err.message)
+        }
+      } else {
+        console.error(err)
+      }
       return this.failureExit(`Could not import task file ${taskFilePathOrUrl}`)
     }
 
-    if (cliParam.value === 'list') {
+    if (cliParam.matches(this._listCommand)) {
       return this.showTaskList(tasks, mainStartTime)
     }
-    if (cliParam.value === 'help') {
-      return this.showHelpMessage()
-    }
-    if (cliParam.value === 'version') {
-      return this.showVersionMessage()
-    }
-    if (cliParam.value === 'filter') {
+    if (cliParam.matches(this._filterCommand)) {
       const filter = process.argv[3]
       return this.showTaskList(tasks, mainStartTime, filter)
     }
 
-    const rootFunc = this.getFunc(tasks, cliParam.value)
+    const rootFunc = this.getFuncByTaskName(tasks, cliParam.value)
     if (!rootFunc) {
       return this.failureExit(`Task '${cliParam.value}' not found. Tasks must be exported functions in your swigfile. Try 'swig list' to see available tasks.`)
     }

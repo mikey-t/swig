@@ -110,8 +110,11 @@
     "src/**/*.ts"
   ],
   "exclude": [
+    "dist",
+    "docs",
     "examples",
     "node_modules",
-    "dist"
+    "packed",
+    "test"
   ]
 }

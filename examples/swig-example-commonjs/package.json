@@ -3,9 +3,7 @@
   "version": "1.0.0",
   "description": "Example swig usage with a CommonJS project (package.json) and CommonJS swigfile.js.",
   "type": "commonjs",
-  "scripts": {
-    "swig": "swig-cjs"
-  },
+  "scripts": {},
   "keywords": [],
   "author": "Mike Thompson",
   "license": "MIT",
@@ -13,6 +11,6 @@
     "node": "18.17.1"
   },
   "devDependencies": {
-    "swig-cli": "file:../../packed/swig-cli-0.0.3.tgz"
+    "swig-cli": "file:../../packed/swig-cli-0.0.4.tgz"
   }
 }
