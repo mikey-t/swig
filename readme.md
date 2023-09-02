@@ -4,7 +4,7 @@ Swig is a simple CLI tool for automating dev workflows via compositions of serie
 
 ## Why Swig Instead of Gulp?
 
-Gulp is great, but it seems like overkill on projects that just need a way to compose series and parallel dev tasks. At the time of writing (2023-08-28), the npm package [howfat]() reports gulp as being quite the beast:
+Gulp is great, but it seems like overkill on projects that just need a way to compose series and parallel dev tasks. At the time of writing (2023-08-28), the npm package [howfat](https://www.npmjs.com/package/howfat) reports gulp as being quite the beast:
 
 ```
 npx howfat@latest gulp

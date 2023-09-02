@@ -1,7 +1,7 @@
-/* eslint-disable @typescript-eslint/no-var-requires */
-import { SpawnOptionsWithoutStdio, spawn } from 'child_process'
-import { existsSync, rmdirSync, mkdirSync, readdirSync, renameSync, readFileSync, writeFileSync } from 'fs'
+import { SpawnOptionsWithoutStdio, spawn } from 'node:child_process'
+import { existsSync, rmdirSync, mkdirSync, readdirSync, renameSync, readFileSync, writeFileSync } from 'node:fs'
 
+const traceEnabled = true
 const TS_TS_NODE = 'swig-example-typescript-ts-node'
 const TS_ESM = 'swig-example-typescript-esm'
 const CJS = 'swig-example-commonjs'
@@ -13,16 +13,6 @@ const primaryCodeFilenameEsm = 'Swig.js'
 const primaryCodeFilenameCjs = 'Swig.cjs'
 const cjsOutputDir = './dist/cjs'
 const esmOutputDir = './dist/esm'
-
-const traceEnabled = true
-
-export function log(message?: unknown, ...optionalParams: unknown[]) {
-  console.log(message, ...optionalParams)
-}
-
-export function trace(message?: unknown, ...optionalParams: unknown[]) {
-  if (traceEnabled) { console.log(message, ...optionalParams) }
-}
 
 let task: string
 
@@ -66,9 +56,7 @@ async function main() {
       break
     case 'smokeTest':
       await runInExamples('npm', ['run', 'transpileSwigfile'], [TS_ESM], traceEnabled)
-      await runInExamples('npx', ['swig', 'list'], allExamples.filter(e => e !== TS_TS_NODE), traceEnabled)
-      await runInExamples('npm', ['run', 'swig', 'list'], [TS_TS_NODE], traceEnabled)
-
+      await runInExamples('npx', ['swig', 'list'], allExamples, traceEnabled)
       break
     default:
       log(`- task not found: ${task}`)
@@ -143,11 +131,13 @@ async function runInExamples(command: string, args: string[], examples: string[]
   if (printOutput) {
     results.forEach(r => {
       if (r.stdout) {
-        log(`\nstdout for '${fullCommand}' in '${r.cwd}':`)
+        log('\n------------------------')
+        log(`stdout for '${fullCommand}' in '${r.cwd}':`)
         log(r.stdout)
       }
       if (r.stderr) {
-        log(`\nstderr for '${fullCommand}' in '${r.cwd}':`)
+        log('\n------------------------')
+        log(`stderr for '${fullCommand}' in '${r.cwd}':`)
         log(r.stderr)
       }
     })
@@ -258,6 +248,14 @@ function exit(exitCode: number, messageOrError: unknown) {
     log(messageOrError)
   }
   process.exit(exitCode)
+}
+
+function log(message?: unknown, ...optionalParams: unknown[]) {
+  console.log(message, ...optionalParams)
+}
+
+function trace(message?: unknown, ...optionalParams: unknown[]) {
+  if (traceEnabled) { console.log(message, ...optionalParams) }
 }
 
 main().then(() => {

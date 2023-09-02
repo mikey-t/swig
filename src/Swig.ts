@@ -1,24 +1,18 @@
-import * as path from 'path'
-import fs from 'fs'
+import * as path from 'node:path'
+import fs from 'node:fs'
 import { pathToFileURL } from 'node:url'
 
-const showMode = false // Show ESM or CommonJS mode in log messages
-
-export function log(message?: unknown, ...optionalParams: unknown[]) {
-  console.log(message, ...optionalParams)
-}
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function trace(message?: unknown, ...optionalParams: unknown[]) {
-  console.log(message, ...optionalParams)
-}
+export const traceEnabled = false
+const showMode = true // In the startup message, display whether the ESM or CommonJS version of this script is being run
 
 /**
+ * Any function that is async or returns a Promise.
  * See {@link TaskOrNamedTask} for more info.
  */
 export type Task = () => Promise<unknown>
 
 /**
+ * A tuple (array with 2 values) of `[string, Task]` that can be used to provide a label for an anonymous function.
  * See {@link TaskOrNamedTask} for more info.
  */
 export type NamedTask = [string, Task]
@@ -49,6 +43,8 @@ interface CommandDescriptor { id: string, names: string[], alternateNames: strin
 
 type TasksMap = [string, (() => void | Promise<void>)][]
 
+export const possibleTaskFileNames = ['swigfile.cjs', 'swigfile.mjs', 'swigfile.js', 'swigfile.ts']
+
 class CliParam {
   value: string
   isCommand: boolean
@@ -66,30 +62,27 @@ class CliParam {
 export default class Swig {
   isCommonJS = typeof require === "function" && typeof module === "object" && module.exports
   isEsm = !this.isCommonJS
-  private _versionString: string = '__VERSION__' // Set in build script in transpiled version of file
-  private _cwd = process.cwd()
-  private _seriesCounter = 1
-  private _parallelCounter = 1
-  private _possibleTaskFileNames = ['swigfile.cjs', 'swigfile.mjs', 'swigfile.js', 'swigfile.ts']
-  private _listCommand = { id: 'list', names: ['list', 'ls', 'l'], alternateNames: ['-l', '--list'], description: 'List available tasks (default)', example: 'swig list' }
-  private _helpCommand = { id: 'help', names: ['help', 'h'], alternateNames: ['-h', '--help'], description: 'Show help message', example: 'swig help' }
-  private _versionCommand = { id: 'version', names: ['version', 'v'], alternateNames: ['-v', '--version'], description: 'Print version number', example: 'swig version' }
-  private _filterCommand = { id: 'filter', names: ['filter', 'f'], alternateNames: ['-f', '--filter'], description: 'Filter and list tasks by name', example: 'swig filter pattern' }
-  private _generateWrapperFilesCommand = { id: 'generateWrapperFiles', names: ['generateWrapperFiles', 'gw'], alternateNames: [], description: 'Generate wrapper files swig and swig.bat (optionally pass additional param \'ts-node\')', example: 'swig gw\n    swig gw ts-node' }
-  private _commandDescriptors: CommandDescriptor[] = [
+  private versionString: string = '__VERSION__' // Set in build script in transpiled version of file
+  private cwd = process.cwd()
+  private seriesCounter = 1
+  private parallelCounter = 1
+  private listCommand = { id: 'list', names: ['list', 'ls', 'l'], alternateNames: ['-l', '--list'], description: 'List available tasks (default)', example: 'swig list' }
+  private helpCommand = { id: 'help', names: ['help', 'h'], alternateNames: ['-h', '--help'], description: 'Show help message', example: 'swig help' }
+  private versionCommand = { id: 'version', names: ['version', 'v'], alternateNames: ['-v', '--version'], description: 'Print version number', example: 'swig version' }
+  private filterCommand = { id: 'filter', names: ['filter', 'f'], alternateNames: ['-f', '--filter'], description: 'Filter and list tasks by name', example: 'swig filter pattern' }
+  private generateWrapperFilesCommand = { id: 'generateWrapperFiles', names: ['generateWrapperFiles', 'gw'], alternateNames: [], description: 'Generate wrapper files swig and swig.bat (optionally pass additional param \'ts-node\')', example: 'swig gw\n    swig gw ts-node' }
+  private commandDescriptors: CommandDescriptor[] = [
     { id: 'task', names: ['<taskName>'], alternateNames: [], description: 'Run a task, whish is an async function exported from your swigfile that returns a Task', example: 'swig functionName' },
-    this._listCommand,
-    this._helpCommand,
-    this._versionCommand,
-    this._filterCommand
-    // this._generateWrapperFilesCommand
+    this.listCommand,
+    this.helpCommand,
+    this.versionCommand,
+    this.filterCommand
+    // this.generateWrapperFilesCommand
   ]
 
   constructor() { }
 
-  /**
-   * Get an instance with singletonManager.ts and then run this method to start the CLI.
-   */
+  // Get an instance with singletonManager.ts and then run this method to start the CLI.
   async runMainAsync() {
     try {
       await this.main()
@@ -100,9 +93,7 @@ export default class Swig {
     }
   }
 
-  /**
-   * Don't call directly - see exports in src/index.ts. Also see {@link TaskOrNamedTask} for more info.
-   */
+  // Don't call directly - see exports in src/index.ts. Also see TaskOrNamedTask for more info.
   series(first: TaskOrNamedTask, ...rest: TaskOrNamedTask[]): Task {
     const innerSeries = async () => {
       for (const task of [first, ...rest]) {
@@ -112,9 +103,7 @@ export default class Swig {
     return innerSeries
   }
 
-  /**
-   * Don't call directly - see exports in src/index.ts. Also see {@link TaskOrNamedTask} for more info.
-   */
+  // Don't call directly - see exports in src/index.ts. Also see TaskOrNamedTask for more info.
   parallel(...tasks: TaskOrNamedTask[]): Task {
     const parallelInner = async () => {
       const promises: Promise<void>[] = tasks.map(task => {
@@ -145,11 +134,11 @@ export default class Swig {
     } else {
       let name = taskOrNamedTask.name
       if (name === 'seriesInner') {
-        name = `nested_${name}_${this._seriesCounter.toString()}`.replace('Inner', '')
-        this._seriesCounter++
+        name = `nested_${name}_${this.seriesCounter.toString()}`.replace('Inner', '')
+        this.seriesCounter++
       } else if (name === 'parallelInner') {
-        name = `nested_${name}_${this._parallelCounter.toString()}`.replace('Inner', '')
-        this._parallelCounter++
+        name = `nested_${name}_${this.parallelCounter.toString()}`.replace('Inner', '')
+        this.parallelCounter++
       } else if (!name) {
         name = 'anonymous'
       }
@@ -158,17 +147,17 @@ export default class Swig {
   }
 
   private getTimestampPrefix(date: Date) {
-    return `[${this.gray(date.toLocaleTimeString('en-US', { hour12: true }))}]`
+    return `[${gray(date.toLocaleTimeString('en-US', { hour12: true }))}]`
   }
 
   private logFormattedStartMessage(taskName: string, startTimestamp: number) {
     const prefix = `${this.getTimestampPrefix(new Date(startTimestamp))} `
-    log(`${prefix}Starting 🚀 ${this.cyan(taskName)}`)
+    log(`${prefix}Starting 🚀 ${cyan(taskName)}`)
   }
 
   private logFormattedEndMessage(taskName: string, endTimestamp: number, duration: number) {
     const prefix = `${this.getTimestampPrefix(new Date(endTimestamp))} `
-    log(`${prefix}Finished ✅ ${this.cyan(taskName)} after ${this.purple(this.formatElapsedDuration(duration))}`)
+    log(`${prefix}Finished ✅ ${cyan(taskName)} after ${purple(this.formatElapsedDuration(duration))}`)
   }
 
   private formatElapsedDuration(elapsedMs: number) {
@@ -179,43 +168,9 @@ export default class Swig {
     }
   }
 
-  colors = {
-    reset: '\x1b[0m',
-    red: '\x1b[31m',
-    green: '\x1b[32m',
-    yellow: '\x1b[33m',
-    cyan: '\x1b[96m',
-    gray: '\x1b[90m',
-    purple: '\x1b[35m'
-  }
-
-  red(str: string) {
-    return this.color(str, this.colors.red)
-  }
-
-  green(str: string) {
-    return this.color(str, this.colors.green)
-  }
-
-  cyan(str: string) {
-    return this.color(str, this.colors.cyan)
-  }
-
-  gray(str: string) {
-    return this.color(str, this.colors.gray)
-  }
-
-  purple(str: string) {
-    return this.color(str, this.colors.purple)
-  }
-
-  color(str: string, colorAnsiCode: string) {
-    return `${colorAnsiCode}${str}${this.colors.reset}`
-  }
-
   private getTaskFilePath(): URL | string | null {
-    for (const filename of this._possibleTaskFileNames) {
-      const filePath = path.resolve(this._cwd, filename)
+    for (const filename of possibleTaskFileNames) {
+      const filePath = path.resolve(this.cwd, filename)
       if (fs.existsSync(filePath)) {
         if (this.isEsm) {
           return pathToFileURL(filePath)
@@ -228,17 +183,17 @@ export default class Swig {
 
   private getStartMessage(taskFilePath: string, cliParam: CliParam): string {
     const commandOrTaskMessage = cliParam.isCommand ? 'Command' : 'Task'
-    const helpMessage = `${this.gray('use ')}swig help ${this.gray('for more info')}`
+    const helpMessage = `${gray('use ')}swig help ${gray('for more info')}`
     const taskFilename = taskFilePath ? path.basename(taskFilePath) : ''
-    const modeMessage = `[ Mode: ${this.cyan(this.isEsm ? 'ESM' : 'CommonJS')} ]` // This may be useful in the future
-    const versionMessage = `Version: ${this.cyan(this._versionString)}`
-    return `[ ${commandOrTaskMessage}: ${this.cyan(cliParam.value)} ][ Swigfile: ${this.cyan(taskFilename)} ][ ${versionMessage} ]${showMode ? modeMessage : ''} ${helpMessage}`
+    const modeMessage = `[ Mode: ${cyan(this.isEsm ? 'ESM' : 'CommonJS')} ]`
+    const versionMessage = `Version: ${cyan(this.versionString)}`
+    return `[ ${commandOrTaskMessage}: ${cyan(cliParam.value)} ][ Swigfile: ${cyan(taskFilename)} ][ ${versionMessage} ]${showMode ? modeMessage : ''}[ ${helpMessage} ]`
   }
 
   private getFinishedMessage(mainStartTime: number, hasErrors?: boolean): string {
     const totalDuration = Date.now() - mainStartTime
-    const statusMessage = `Result: ${hasErrors ? this.red('failed') : this.green('success')}`
-    const durationMessage = `Total duration: ${this.color(this.formatElapsedDuration(totalDuration), hasErrors ? this.colors.yellow : this.colors.green)}`
+    const statusMessage = `Result: ${hasErrors ? red('failed') : green('success')}`
+    const durationMessage = `Total duration: ${color(this.formatElapsedDuration(totalDuration), hasErrors ? AnsiColor.YELLOW : AnsiColor.GREEN)}`
     return `[ ${statusMessage} ][ ${durationMessage} ]`
   }
 
@@ -246,10 +201,10 @@ export default class Swig {
     const cliArg = process.argv[2]
 
     if (!cliArg) {
-      return new CliParam(this._listCommand.id, true)
+      return new CliParam(this.listCommand.id, true)
     }
 
-    const commandDescriptor = this._commandDescriptors.find(d => d.names.includes(cliArg.toLowerCase()) || d.alternateNames.includes(cliArg.toLowerCase()))
+    const commandDescriptor = this.commandDescriptors.find(d => d.names.includes(cliArg.toLowerCase()) || d.alternateNames.includes(cliArg.toLowerCase()))
     if (commandDescriptor) {
       return new CliParam(commandDescriptor.id, true)
     }
@@ -267,15 +222,15 @@ export default class Swig {
   }
 
   private showTaskList(tasks: TasksMap, mainStartTime: number, filter?: string) {
-    const taskNames = tasks.map(([name, _]) => name)
+    const taskNames = tasks.map(([name,]) => name)
     log(`Available tasks:`)
     for (const taskName of taskNames) {
-      const taskFn = tasks.find(([name, _]) => name === taskName)?.[1]
-      if (typeof taskFn === 'function') {
+      const taskFn = tasks.find(([name,]) => name === taskName)?.[1]
+      if (this.isFunction(taskFn)) {
         if (filter && !taskName.toLowerCase().includes(filter.toLowerCase())) {
           continue
         }
-        log(`  ${this.cyan(taskName)}`)
+        log(`  ${cyan(taskName)}`)
       }
     }
     log(this.getFinishedMessage(mainStartTime))
@@ -285,20 +240,20 @@ export default class Swig {
   private showHelpMessage() {
     log(`Usage: swig <command> [options]`)
     log(`Commands:`)
-    for (const commandDescriptor of this._commandDescriptors) {
-      log(`  ${commandDescriptor.names.join(', ')} ${this.gray(commandDescriptor.description)}`)
-      log(`    ${this.gray(commandDescriptor.example)}`)
+    for (const commandDescriptor of this.commandDescriptors) {
+      log(`  ${commandDescriptor.names.join(', ')} ${gray(commandDescriptor.description)}`)
+      log(`    ${gray(commandDescriptor.example)}`)
     }
     return this.okExit()
   }
 
   private showVersionMessage() {
-    log(this._versionString)
+    log(this.versionString)
     return this.okExit()
   }
 
   private getFuncByTaskName(tasks: TasksMap, taskName: string) {
-    return tasks.find(([name, _]) => name === taskName)?.[1]
+    return tasks.find(([name,]) => name === taskName)?.[1]
   }
 
   private generateWrapperFiles() {
@@ -313,15 +268,15 @@ export default class Swig {
     const tsNodeBat = `@echo off\nREM ${helpMessage}\nnode ./node_modules/.bin/ts-node -T ./node_modules/swig-cli/dist/cjs/swigCli.cjs %*`
     const tsNodeSh = `#!/bin/bash\n# ${helpMessage}\nnode ./node_modules/.bin/ts-node -T ./node_modules/swig-cli/dist/cjs/swigCli.cjs $@`
 
-    const batPath = path.resolve(this._cwd, batFilename)
-    const shPath = path.resolve(this._cwd, shFilename)
+    const batPath = path.resolve(this.cwd, batFilename)
+    const shPath = path.resolve(this.cwd, shFilename)
 
     fs.writeFileSync(batPath, isTsNode ? tsNodeBat : bat, { encoding: 'utf8' })
     fs.writeFileSync(shPath, isTsNode ? tsNodeSh : sh, { encoding: 'utf8' })
 
     const additionalTsMessage = isTsNode ? ' pointing to ts-node' : ''
-    log(`Generated wrapper files ${this.cyan(shFilename)} and ${this.cyan(batFilename)}${additionalTsMessage}`)
-    log(`Don't forget to run '${this.cyan('chmod +x swig')}' to make swig executable if you are on Linux or Mac`)
+    log(`Generated wrapper files ${cyan(shFilename)} and ${cyan(batFilename)}${additionalTsMessage}`)
+    log(`Don't forget to run '${cyan('chmod +x swig')}' to make swig executable if you are on Linux or Mac`)
 
     return this.okExit()
   }
@@ -333,46 +288,38 @@ export default class Swig {
 
     const taskFilePathOrUrl: string | URL | null = this.getTaskFilePath() // string or URL to support both ESM and CJS
 
-    if (cliParam.value === this._versionCommand.id) {
+    if (cliParam.value === this.versionCommand.id) {
       return this.showVersionMessage()
     }
 
     log(this.getStartMessage(taskFilePathOrUrl ? taskFilePathOrUrl.toString() : '', cliParam))
 
-    if (cliParam.value === this._helpCommand.id) {
+    if (cliParam.value === this.helpCommand.id) {
       return this.showHelpMessage()
     }
 
-    if (cliParam.matches(this._generateWrapperFilesCommand)) {
+    if (cliParam.matches(this.generateWrapperFilesCommand)) {
       return this.generateWrapperFiles()
     }
 
     if (!taskFilePathOrUrl) {
-      return this.failureExit(`Task file not found - must be one of the following: ${this._possibleTaskFileNames.join(', ')}`)
+      return this.failureExit(`Task file not found - must be one of the following: ${possibleTaskFileNames.join(', ')}`)
     }
 
     let module: object
     let tasks: TasksMap
     try {
       module = await import(taskFilePathOrUrl.toString())
-      tasks = Object.entries(module).filter(([_, value]) => this.isFunction(value))
+      tasks = Object.entries(module).filter(([, value]) => this.isFunction(value))
     } catch (err) {
-      if (err instanceof Error) {
-        if (err.message.includes('Cannot find module') || err.message.includes('Cannot find package')) {
-          return this.failureExit(`Error importing swig-cli from within ${this.cyan(path.basename(taskFilePathOrUrl.toString()))}\nMake sure you have installed the dependency swig-cli in your project: npm i -D swig-cli`)
-        } else {
-          console.error(err.message)
-        }
-      } else {
-        console.error(err)
-      }
+      console.error(err)
       return this.failureExit(`Could not import task file ${taskFilePathOrUrl}`)
     }
 
-    if (cliParam.matches(this._listCommand)) {
+    if (cliParam.matches(this.listCommand)) {
       return this.showTaskList(tasks, mainStartTime)
     }
-    if (cliParam.matches(this._filterCommand)) {
+    if (cliParam.matches(this.filterCommand)) {
       const filter = process.argv[3]
       return this.showTaskList(tasks, mainStartTime, filter)
     }
@@ -396,7 +343,7 @@ export default class Swig {
           label = `Errors (${err.length})`
         }
       }
-      log(this.red(label))
+      log(red(label))
       console.error(err)
     } finally {
       log(this.getFinishedMessage(mainStartTime, hasErrors))
@@ -407,7 +354,7 @@ export default class Swig {
   }
 
   private failureExit(message?: string) {
-    if (message) { console.error(`${this.red('Error:')} ${message}`) }
+    if (message) { console.error(`${red('Error:')} ${message}`) }
     process.exit(1)
   }
 
@@ -415,3 +362,50 @@ export default class Swig {
     process.exit(0)
   }
 }
+
+export function log(message?: unknown, ...optionalParams: unknown[]) {
+  console.log(message, ...optionalParams)
+}
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function trace(message?: unknown, ...optionalParams: unknown[]) {
+  if (traceEnabled) {
+    console.log(message, ...optionalParams)
+  }
+}
+
+export enum AnsiColor {
+  RESET = '\x1b[0m',
+  RED = '\x1b[31m',
+  GREEN = '\x1b[32m',
+  YELLOW = '\x1b[33m',
+  CYAN = '\x1b[96m',
+  GRAY = '\x1b[90m',
+  PURPLE = '\x1b[35m'
+}
+
+class Colors {
+  private constructor() { }
+  private static instance: Colors
+
+  static getInstance(): Colors {
+    if (!Colors.instance) {
+      Colors.instance = new Colors()
+    }
+    return Colors.instance
+  }
+
+  color(str: string, colorAnsiCode: AnsiColor): string {
+    return `${colorAnsiCode}${str}${AnsiColor.RESET}`
+  }
+}
+
+const singletonColors = Colors.getInstance()
+
+export const red = (str: string) => singletonColors.color(str, AnsiColor.RED)
+export const green = (str: string) => singletonColors.color(str, AnsiColor.GREEN)
+export const cyan = (str: string) => singletonColors.color(str, AnsiColor.CYAN)
+export const gray = (str: string) => singletonColors.color(str, AnsiColor.GRAY)
+export const purple = (str: string) => singletonColors.color(str, AnsiColor.PURPLE)
+export const yellow = (str: string) => singletonColors.color(str, AnsiColor.YELLOW)
+export const color = (str: string, color: AnsiColor) => singletonColors.color(str, color)
