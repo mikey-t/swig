@@ -4,7 +4,7 @@ Swig is a simple CLI tool for automating dev workflows via compositions of serie
 
 ## Why Swig Instead of Gulp?
 
-Why recreate the series/parallel automation that Gulp already has? Gulp is great - I use it a lot. I have a handful of reasons for wanting to create swig, but I guess the main one is just to see if I could, and to have control to tweak things as I see fit. I rant about this quite a bit, but be warned that it's vary opinionated: [./docs/WhySwigInsteadOfGlup.md](./docs/WhySwigInsteadOfGlup.md).
+Why recreate the series/parallel automation that Gulp already has? Gulp is great - I use it a lot. I have a handful of reasons for wanting to create swig, but I guess the main one is just to see if I could, and to have control to tweak things as I see fit. I rant about this quite a bit, but be warned that it's quite opinionated: [./docs/WhySwigInsteadOfGlup.md](./docs/WhySwigInsteadOfGlup.md).
 
 ## Getting Started
 
