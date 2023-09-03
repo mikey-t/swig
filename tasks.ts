@@ -1,4 +1,4 @@
-import { SpawnOptionsWithoutStdio, spawn } from 'node:child_process'
+import { SpawnOptions, spawn } from 'node:child_process'
 import { existsSync, rmdirSync, mkdirSync, readdirSync, renameSync, readFileSync, writeFileSync } from 'node:fs'
 
 const traceEnabled = true
@@ -71,7 +71,7 @@ interface SpawnResult {
   cwd?: string
 }
 
-async function spawnAsync(command: string, args: string[], options: SpawnOptionsWithoutStdio, liveOutput = false): Promise<SpawnResult> {
+async function spawnAsync(command: string, args: string[], options: SpawnOptions, liveOutput = false): Promise<SpawnResult> {
   return new Promise((resolve, reject) => {
     const result: SpawnResult = {
       stdout: '',
@@ -82,14 +82,14 @@ async function spawnAsync(command: string, args: string[], options: SpawnOptions
 
     const proc = spawn(command, args, options)
 
-    proc.stdout.on('data', (data) => {
+    proc.stdout?.on('data', (data) => {
       result.stdout += data
       if (liveOutput) {
         log(data.toString())
       }
     })
 
-    proc.stderr.on('data', (data) => {
+    proc.stderr?.on('data', (data) => {
       result.stderr += data
       if (liveOutput) {
         console.error(data.toString())
