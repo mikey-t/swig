@@ -1,6 +1,6 @@
 {
   "name": "swig-cli",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "Swig is a simple CLI tool for automating dev workflows via compositions of series and parallel tasks.",
   "repository": {
     "type": "git",

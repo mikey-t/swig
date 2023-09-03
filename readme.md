@@ -4,74 +4,65 @@ Swig is a simple CLI tool for automating dev workflows via compositions of serie
 
 ## Why Swig Instead of Gulp?
 
-Gulp is great, but it seems like overkill on projects that just need a way to compose series and parallel dev tasks. At the time of writing (2023-08-28), the npm package [howfat](https://www.npmjs.com/package/howfat) reports gulp as being quite the beast:
+Why recreate the series/parallel automation that Gulp already has? Gulp is great - I use it a lot. I have a handful of reasons for wanting to create swig, but I guess the main one is just to see if I could, and to have control to tweak things as I see fit. I rant about this quite a bit, but be warned that it's vary opinionated: [./docs/WhySwigInsteadOfGlup.md](./docs/WhySwigInsteadOfGlup.md).
 
-```
-npx howfat@latest gulp
-gulp@4.0.2 (457 deps, 9.55mb, 3468 files, ©MIT)
-```
+## Getting Started
 
-My transpiled source file is currently 270 lines and I have exactly 0 dependencies. It's small and fast. Obviously if you need all the other great stuff gulp has, than that's probably the way to go. But if you just need something lightweight and/or are annoyed by the security warnings they refuse to address, than swig should be a decent option.
+- (Optional, but recommended) Install swig (`swig-cli`) globally for convenient shortened commands and much faster task execution (no initial delay from npm/npx):
 
-Ultimately, I really just wanted a library with the following:
-
-- series
-- parallel
-- file manipulation
-- control to fix or improve functionality
-
-For working with files, node's built-in `fs` module works just fine for me.
-
-For `series` and `parallel` I decided to try and implement this in such a way that I can also pass in anonymous functions with name labels and get appropriate logging. This will be very convenient for developing a library of generic helper methods and calling them directly in the composition instead of re-defining all the methods again, just to get a method name logged with each sub-task.
-
-I also wanted to experiment with developing a library using typescript and publishing both CommonJS and ESM compatible versions while also allowing use of different file types for the swigfile.
-
-## Swig Documentation
-
-Below you will find instructions on how to setup and use swig. If you'd like to make changes to the library or are just curious about my dev strategy, see [./docs/SwigDevNotes.md](./docs/SwigDevNotes.md).
-
-There are also example projects that show different combinations of project types (based on the package.json `"type"` being `"module"` or not) and `swigfile` extension types. These are located in the `examples` directory of this repository.
-
-### Getting Started
-
-High level steps to get started (see more detail in the rest of the docs):
-
-- (Optional) Install swig globally for convenient shortened CLI commands:
-```
+```bash
 npm i -g swig-cli@latest
 ```
-- Install `swig-cli` package as dev dependency (this is required regardless of global install so that you can import `series` and `parallel`):
-```
+
+- Install `swig-cli` package as dev dependency so you can import `series` and `parallel`:
+
+```bash
 npm i -D swig-cli
 ```
-- Determine what your project type is (ESM or CommonJS based on your project's package.json `"type"` property, or lack thereof)
-- Create a `swigfile.js` in the root of your project (or in whatever directory you plan on running the swig commands from). There are multiple options to name this file, so choose based on what your project type is and what flavor of JavaScript syntax you want to use in your swigfile.
-- Create a package.json script alias so you can run `swig` easily (not necessarily required if you plan on using the global install and aren't using one of the combos that requires it):
-```
-"scripts": {
-  "swig": "swig"
-}
-```
+
+- Create a `swigfile` in the root of your project, such as `swigfile.js` (see [Swigfile Syntax Options Matrix](#swigfile-syntax-options-matrix))
 - Add some tasks to your swigfile. Any exported function will do, but the magic happens when you start composing functions together with `series` and `parallel` - see examples below.
+- Add some tasks to your swigfile (see [Series, Parallel and Composability Examples](#series-parallel-and-composability-examples))
 - List detected tasks from your swigfile:
+
 ```JavaScript
 // Global install
-swig list
+swig
 // Local install
-npm run swig list
+npx swig
 ```
+
 - Run a task:
+
 ```JavaScript
 // Global install
 swig yourTask
 // Local install
-npm run swig yourTask
+npx swig yourTask
 ```
 
+## Swigfile Syntax Options Matrix
 
-### Series, Parallel and Composability
+Your `swigfile` can be one of the following:
 
-A dev task like `build` might have several steps where some steps can happen in parallel and others must happen sequentially. So we define each of the steps as functions and compose them into an exported build task:
+- `swigfile.cjs`
+- `swigfile.mjs`
+- `swigfile.js`
+- `swigfile.ts`
+
+If there are multiple swigfiles in your project directory, swig will use the first one it finds, using the order above. The following shows the various options for your swigfile file extension, package.json `type` and syntax flavor to use.
+
+| Swigfile Extension | package.json `type`  | Required Syntax           | Notes                               |
+|--------------------|----------------------|----------------------------|-------------------------------------|
+| `.js`              | `module`             | ESM Syntax                 |                                     |
+| `.js`              | Not `module` (CommonJS)| CommonJS Syntax          |                                     |
+| `.cjs`             | Any                  | CommonJS Syntax           | `package.json` type doesn't matter  |
+| `.mjs`             | Any                  | ESM Syntax                 | `package.json` type doesn't matter  |
+| `.ts`              | Any                  | Typescript Syntax         | `ts-node` must be installed as a local dependency|
+
+## Series, Parallel and Composability Examples
+
+A dev task like `build` might have several steps where some steps can happen in parallel and others must happen sequentially. So we define each of the steps as functions and compose them into an exported task we're calling simply `build`:
 
 Sample swigfile contents:
 ```JavaScript
@@ -83,80 +74,26 @@ async function postBuild() {...}
 export const build = series(buildPrep, parallel(buildClient, buildServer), postBuild)
 ```
 
-Then we can run this with `swig build`. See below for various ways to execute `swig`.
-
-### Swig Installation: Global vs Package Local
-
-You can install swig globally, or as a dependency within a project.
-
-To install globally:
-
-```
-npm i -g swig-cli@latest
+And then we can run it with :
+```javascript
+// Global install
+swig build
+// Local install
+npx swig build
 ```
 
-Then you can run commands directly in any project without going through npm:
+## Async vs Sync Functions and Typescript Method Signatures
 
-```
-swig list
-```
-
-While installing globally is convenient, there are several reasons why you may not want that. To install locally in your project:
-
-```
-npm i -D swig-cli@latest
-```
-
-Then you can add an alias in your package.json `"scripts"` section for convenience. For the esm version:
-
-```
-"swig": "swig"
-```
-
-For the cjs (CommonJS) version:
-
-```
-"swig": "swig-cjs"
-```
-
-Then you can run the package local version with:
-
-```
-npm run swig list
-```
-
-### Swigfile
-
-The `swigfile` is where you define all your tasks and compose them together into exported top level tasks that swig can run.
-
-Swig will look for one of these, in this order:
-- `swigfile.cjs`
-- `swigfile.mjs`
-- `swigfile.js`
-- `swigfile.ts`
-
-Swigfile info:
-
-- Swig will only be able to run functions that you export from your swigfile. If you define functions but don't export them, swig will not show that function in the list of available tasks when you run `swig list` and it will throw an error about that task being missing if you attempt to call swig with a non-exported function name as the param.
-- Make sure the swigfile extension matches your project (more on that below)
-- The file must be import-able. This means there must be no errors and no invalid syntax for whichever type you're using. Some examples:
-    - If you're using commonjs then you must use `exports.yourTask = async function yourTask(){}` instead of the esm style `export const yourTask = async function yourTask(){}`
-    - If you're using commonjs you can use `require` but if you're using esm you must only use `import`
-- The file should not execute anything immediately that you don't want to be run every time any swig task is run. It should usually only define functions and composable tasks. You're welcome to put any valid code in your swigfile as long as it doesn't prevent the file from being imported and you intend for any immediately executed code to be run every time any swig task is executed.
-
-### Async vs Sync Functions and Typescript Method Signatures
-
-You can technically pass non-async functions to `series` and `parallel`, but it's not recommended. Also, if you're using a Typescript swigfile, it will complain about non-async functions not matching these types:
+You can technically pass non-async functions to `series` and `parallel`, but it's not recommended - it may lead to subtle bugs, so just mark your functions with `async` even if there's no `await` being used. You will also notice that if you're using a typescript swigfile and you have type checking, it will complain about any functions not matching these types (you'll get an error like `Argument of type '() => void' is not assignable to parameter of type 'TaskOrNamedTask'`):
 
 ```Typescript
 export type Task = () => Promise<any>
 export type NamedTask = [string, Task]
-export type TaskOrNamedTask = Task | NamedTask
 ```
 
 More on `NamedTask` below under [Anonymous Functions and Named Anonymous Functions](#anonymous-functions-and-named-anonymous-functions).
 
-### Individual Single Function Tasks
+## Individual Single Function Tasks
 
 The `series` and `parallel` methods are really handy, but sometimes you may just want to run one single function, which you can do by simply exporting a regular function in your swigfile:
 
@@ -169,53 +106,78 @@ Then run it with:
 // Global swig install
 swig doStuff
 // Local swig install
-npm run swig doStuff
+npx swig doStuff
 ```
 
-### Anonymous Functions and Named Anonymous Functions
+## Anonymous Functions and Named Anonymous Functions
 
-You can pass anonymous functions to `series` and `parallel`, but when it logs start and finish events, it will just call it "anonymous".
+You can pass anonymous functions to `series` and `parallel`.
 
 Example of using an anonymous function:
 
-```
+```javascript
 async function doStuff() {
   console.log('log message from doStuff')
 }
-export const yourTask = series(doStuff, async () => { console.log('This is a console message from an anonymous task') })
+
+export const yourTask = series(
+  doStuff,
+  async () => { console.log('This is a console message from an anonymous task') }
+)
 ```
 
 ```
 [6:00:21 PM] Starting 🚀 doStuff
 log message from doStuff
-[6:00:21 PM] Finished ✅ doStuff after 6 ms
+[6:00:21 PM] Finished ✅ doStuff after 9 ms
 [6:00:21 PM] Starting 🚀 anonymous
 This is a console message from an anonymous task
 [6:00:21 PM] Finished ✅ anonymous after 1 ms
 ```
 
-This is really handy if you have a library of helper methods that you want to easily be able to pass in as one-liners:
+This is really handy if you have a library of helper methods that you want to easily be able to pass in as one-liners while using params from your script, all without re-defining new wrapper functions or creating factory functions. For example:
 
-```
+```javascript
+import { syncEnvFiles, emptyDirectory, ensureDockerUp } from 'my-lib'
+
+// Example script var
+const dockerProjectName = '...'
+
+// Example helper method/sub-task
+async function runIntegrationTests() { /* ... */ }
+
+// Export your task to be run by swig
 export const build = series(
+  parallel(
+    async () => syncEnvFiles('.env', [clientDir, serverDir, dockerDir]),
+    async () => emptyDirectory(clientBuildDir),
+    async () => emptyDirectory(serverBuildDir)
+  ),
+  async () => ensureDockerUp(dockerProjectName),
   prepBuild,
-  parallel(buildClient, buildServer),
-  () => copyDirectory(clientBuildDir, clientReleaseDir),
-  () => copyDirectory(serverBuildDir, serverReleaseDir)
+  parallel(
+    buildClient,
+    buildServer
+  ),
+  parallel(
+    async () => myLib.copyDirectory(clientBuildDir, clientReleaseDir),
+    async () => myLib.copyDirectory(serverBuildDir, serverReleaseDir)
+  ),
+  runIntegrationTests
 )
 ```
 
-And if you don't want the output to say things like "Starting 🚀 anonymous" as shown above, you can use a tuple with a label to use with your anonymous function (Typescript type `NamedTask` exported from swig):
+And if you don't want the output to log your methods as "`anonymous`" as shown further above, you can use a tuple with a label to use with your anonymous function (`NamedTask = [string, Task]`):
 
-```
+```javascript
 export const build = series(
   prepBuild,
   parallel(buildClient, buildServer),
-  ['copyClientBuild', () => copyDirectory(clientBuildDir, clientReleaseDir)],
-  ['copyServerBuild', () => copyDirectory(serverBuildDir, serverReleaseDir)]
+  ['copyClientBuild', async () => copyDirectory(clientBuildDir, clientReleaseDir)],
+  ['copyServerBuild', async () => copyDirectory(serverBuildDir, serverReleaseDir)]
 )
 ```
-
+Example output with named anonymous tasks:
 ```
 [6:09:26 PM] Starting 🚀 prepBuild
 [6:09:26 PM] Finished ✅ prepBuild after 12 ms
@@ -233,69 +195,98 @@ export const build = series(
 
 Wow! Nice!
 
-### Recommended Project Type Swigfile Type Combo
+## Error Behavior
 
-There's a lot of possible different combinations, but the recommended approach is to use ESM syntax in a `swigfile.js` in ESM projects and `swigfile.mjs` to still have ESM syntax even in CommonJS projects.
+I've setup the default behavior to be fairly simple:
 
-### Project Types and Swigfile File Extensions and Package.json Script Alias
+- If a function called by series throws an error, no further execution will occur
+- If a function called by parallel throws an error:
+  - All sibling functions within the same parallel call will be allowed to continue
+  - All errors for all functions in the same parallel call that threw errors will have the error they threw logged to the console at the end of execution (in addition to whatever logging you have setup in the functions themselves)
+  - Execution will stop after all methods in the same parallel call return
 
-I've attempted to publish `swig` so that it can be used in a variety of project types with several "dialects" that can be used in the swigfile. For examples, take a look at the `examples` directory in this project and take note of the different package.json/file combinations that I've tested. See above for my recommended setup: [recommended setup](#recommended-project-type-swigfile-type-combo).
+If you have more complicated error behavior requirements, there's lots of ways to do this with vanilla javascript, such as setting and checking global state vars in your swigfile. And if for some reason you've concocted some really complex error scenarios that requires finer grained control and you want it wired directly up to series/parallel methods... well then there's always gulp.
 
-For a basic example of another setup, let's say you like CommonJS and your project's package.json `"type"` property is set to `"commonjs"` (or left off to default to CommonJS), then you can use `swigfile.js` and use CommonJS syntax like `require` and `exports.yourFunc` and your npm alias would be `"swig": "swig-cjs"` instead of the ESM version `"swig": "swig"`.
+## Typescript Notes
 
-And if you like ESM and your project.json `"type"` is set to `"module"` (ESM), then you can use `swigfile.js` or `swigfile.mjs` and your npm alias would just be `"swig": "swig"`.
+For a typescript swigfile.ts to work, you just need to install [`ts-node`](https://typestrong.org/ts-node/docs/) as a local dependency.
 
-However, note that you may run into mismatches depending on your setup. For example if your project package.json `"type"` is set to `"module"` (ESM), and you use `swigfile.js`, but use CommonJS syntax in that file, you'll get an error when it tries to import that file. Instead, you'll want to use ESM syntax in your file. In this same scenario, if you rename the file to `swigfile.cjs` then it will run it, but will probably do weird/bad things unless you also change your package.json script alias from `"swig": "swig"` to `"swig": "swig-cjs"`.
+Note that I'm using the `-T` option under the hood to speed up execution ([`--transpileOnly`](https://typestrong.org/ts-node/docs/options#transpileonly)). There's valid reasons not to use this, but I generally rely on the IDE along with plugins like eslint plugins to find "compile-time" errors when I'm using ts-node in a dev situation rather than slowing down the execution with these type of checks. And if you don't use a good IDE for some reason, you'll still get some of the errors - you'll just see them at a slightly different spot in the execution process. But there are plenty of scenarios where this will let you shoot yourself in the foot, so just be aware if you're writing code in Notepad.exe or something. In the future I'd like to allow overriding swig's default ts-node config so this and other ts-node options can be changed.
 
-In general you should try and match your swigfile type/style to your project type. In addition to ensuring your swigfile can be loaded and executed, you'll want your normal IDE support for whatever dialect you chose. So, just because you can technically use a `swigfile.mjs` (ESM) in your CommonJS project, but you may not get the best possible IDE support because your package.json is set to CommonJS.
+If you don't want to install ts-node or just want to do your own transpilation, you can have 2 swigfiles in your directory and it'll pick the first one it finds, starting with the non-typescript versions. So if you have `swigfile.ts` file and maybe you have it automatically being transpiled to `swigfile.js`, then swig will pick up and use the `swigfile.js` version instead of using ts-node. Just don't forget to setup live watching of your swigfile if you're actively making changes and re-running it (such as with `tsc --watch` or whatever tool you're using).You wouldn't want to end up scratching your head because something isn't doing what you think it should, only because it doesn't have your latest changes.
 
-### Typescript `swigfile.ts`
+## Recommended Usage
 
-If you want to use typescript for your swigfile you have a few options, although please note that I have done very little testing on this, and only with Typescript version 5.2.2 and ts-node version 10.9.1.
+My recommendation is to install `swig-cli` as as global npm package (`npm i -g swig-cli`) because it will run much faster (no initial delay - see below), and you can type less. Also, if you use this on many projects like I do, you don't have to remember to add npm aliases to each project.
 
-Typescript is great and makes JavaScript suck way less, but note that it's not my first recommended choice for this particular task. For my recommended approach, see above: [recommended setup](#recommended-project-type-swigfile-type-combo).
+My opinion is that running stuff through npx and npm aliases is annoying because of the initial delay on each startup. For me this delay can be anywhere between 1 second and 4-8 seconds for some reason. That's not all that long, but it feels like an eternity when running a task that should only take a few milliseconds. This is why I prefer and recommend using a global install of `swig-cli` so you can call `swig` directly without incurring the startup delay.
 
-#### Option 1: run `swigfile.ts` directly with `ts-node`
+If you choose to setup an npm alias anyway, you can create a simple alias that just points node to your local node_modules instance of swig:
 
-Define your package.json script alias to point directly to the CJS specific version of swig (`swig-cli.cjs`) file, called by `ts-node`:
-
-```
+```json
 "scripts": {
-  "swig": "ts-node -T ./node_modules/swig-cli/dist/cjs/swig-cli.cjs"
-},
-```
-
-Notes on the `ts-node` option:
-
-- `-T` is for `--transpileOnly` which is a little faster than without it (your IDE can do the type checking, no need to transpile every time you run it).
-- The CJS version of swig is being used because ESM can't import a typescript file directly.
-- Your project typescript settings (tsconfig.json) might affect how ts-node executes the swigfile. I haven't done a lot of testing here, so your mileage may vary.
-
-#### Option 2: transpile your `swigfile.ts` to `swigfile.js` whenever you make changes
-
-Define your package.json script aliases (assuming you have typescript installed locally in your project with `npm i -D typescript` so we can use `tsc`):
-
-```
-"scripts": {
-  "transpileSwig": "tsc --target ESNext --module NodeNext --moduleResolution NodeNext swigfile.ts",
   "swig": "swig"
-  // OR to just transpile it every time:
-  "swig": "npm run transpileSwig && swig"
-},
+}
 ```
 
-Notes on the transpilation option:
+And then call it with :
 
-- You'll have 2 swigfiles in your solution (swigfile`.js` and swigfile`.ts`), which isn't great.
-- It's okay to have both swigfile in your solution from the CLI tool's perspective, but note that it'll take the first one, so it'll always use `swigfile.js` even if there is also a `swigfile.ts`.
-- You might accidentally run your swigfile`.js` without transpiling and getting new changes from swigfile`.ts`, which isn't great. You can workaround that by including the transpilation in your script alias, but that'll add a noticeable delay whenever you run a swig task, which isn't great.
-- Running the `.js` version is actually a lot faster than using ts-node, so when not making changes, it can be really snappy, which is not a bad thing. It's possible you're not making changes to your swigfile very often if they're just build scripts you got working once and you just run them afterwords, only updating them rarely.
-- This option is actually a little safer than the ts-node option because you're not relying on tsconfig settings possibly breaking things (or different versions of typescript and ts-node).
-- Perhaps in the future I'll build in a way to check if the file needs to be transpiled and if so do it automatically, and store it in a git-ignored directory specified by some config value.
+```bash
+npm run swig yourTask
+```
+
+Or if you really like npm aliases and have lots of them and want to document each dev automation task in your package.json, you might alias individual tasks like this:
+
+```json
+"scripts": {
+  "swig": "swig",
+  "build": "swig build",
+  "test": "swig test"
+}
+```
+
+So that you can run stuff like this:
+
+```bash
+npm run build
+npm run test
+npm run swig someOtherTask
+```
+
+## Other Commands
+
+
+Use the command `swig help` to see other available commands:
+
+```
+Usage: swig <command or taskName> [options]
+Commands:
+  <taskName> - Run a "task", which is an async function exported from your swigfile
+    swig taskName
+  list, ls, l - List available tasks (default)
+    swig list
+  help, h - Show help message
+    swig help
+  version, v - Print version number
+    swig version
+  filter, f - Filter and list tasks by name
+    swig filter pattern
+```
+
+Note that these are essentially "reserved words". If you define exported tasks with these names in your swigfile, they'll never get run. The swig command will be run instead. Originally I was using dash params, but npm aliases and npx was causing them to be hijacked (for example, npx swig -v would output the npx version...). I've since changed my startup strategy and that may no longer be an issue, but I've left the commands as is for now.
+
+Also note the `filter` command, which is handy if you have long list of commands and want to show only those with a particular substring (case insensitive). For example, list all tasks that have `db` in their names:
+
+```bash
+swig f db
+```
 
 ### Disclaimers
 
-- This package is pretty alpha. I've tested with several combinations of ESM, CommonJS and Typescript, but I've only tested with NodJS v18.
-- Unit tests haven't been added - I've only wired up some basic smoke tests for trying out different project/swigfile combos.
-- Parallel is neat, but in practice JavaScript is still only single-threaded, so this will have more advantages in some cases than others. I have a dotnet prototype that is truly parallel/multi-threaded, so stay tuned for that if you projects that could benefit from multi-threaded processing.
-- Pay no attention to the wonky tasks.cjs in this project - I plan on doing some cleanup once I feel the core functionality is solid.
+- This package is pretty alpha. I've tested with several combinations of ESM, CommonJS and Typescript, but I've only tested with NodeJS 16 and 18.
+- Unit tests haven't been added yet - I've only wired up some basic smoke tests for trying out different project/swigfile/syntax combos.
+- Parallel is neat, but in practice JavaScript is still only single-threaded, so this will have more advantages in some scenarios than others. I have a dotnet prototype that is truly parallel/multi-threaded, so stay tuned for that if you have projects that could benefit from true multi-threaded processing.
+
+## Dev Notes
+
+If you'd like to make changes to the library or are just curious about my dev strategy, see [./docs/SwigDevNotes.md](./docs/SwigDevNotes.md).

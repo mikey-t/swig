@@ -8,11 +8,13 @@ async function task1() {
 async function task2() {
   console.log('This is a console message from task2')
   await sleep(50)
+  // throw new Error('test error')
 }
 
 async function task3() {
   console.log('This is a console message from task3')
   await sleep(50)
+  // throw new Error('test error')
 }
 
 async function task4() {

@@ -70,14 +70,12 @@ export default class Swig {
   private helpCommand = { id: 'help', names: ['help', 'h'], alternateNames: ['-h', '--help'], description: 'Show help message', example: 'swig help' }
   private versionCommand = { id: 'version', names: ['version', 'v'], alternateNames: ['-v', '--version'], description: 'Print version number', example: 'swig version' }
   private filterCommand = { id: 'filter', names: ['filter', 'f'], alternateNames: ['-f', '--filter'], description: 'Filter and list tasks by name', example: 'swig filter pattern' }
-  private generateWrapperFilesCommand = { id: 'generateWrapperFiles', names: ['generateWrapperFiles', 'gw'], alternateNames: [], description: 'Generate wrapper files swig and swig.bat (optionally pass additional param \'ts-node\')', example: 'swig gw\n    swig gw ts-node' }
   private commandDescriptors: CommandDescriptor[] = [
-    { id: 'task', names: ['<taskName>'], alternateNames: [], description: 'Run a task, whish is an async function exported from your swigfile that returns a Task', example: 'swig functionName' },
+    { id: 'task', names: ['<taskName>'], alternateNames: [], description: 'Run a "task", which is an async function exported from your swigfile', example: 'swig taskName' },
     this.listCommand,
     this.helpCommand,
     this.versionCommand,
     this.filterCommand
-    // this.generateWrapperFilesCommand
   ]
 
   constructor() { }
@@ -238,10 +236,10 @@ export default class Swig {
   }
 
   private showHelpMessage() {
-    log(`Usage: swig <command> [options]`)
+    log(`Usage: swig <command or taskName> [options]`)
     log(`Commands:`)
     for (const commandDescriptor of this.commandDescriptors) {
-      log(`  ${commandDescriptor.names.join(', ')} ${gray(commandDescriptor.description)}`)
+      log(`  ${commandDescriptor.names.join(', ')}${gray(` - ${commandDescriptor.description}`)}`)
       log(`    ${gray(commandDescriptor.example)}`)
     }
     return this.okExit()
@@ -254,31 +252,6 @@ export default class Swig {
 
   private getFuncByTaskName(tasks: TasksMap, taskName: string) {
     return tasks.find(([name,]) => name === taskName)?.[1]
-  }
-
-  private generateWrapperFiles() {
-    const batFilename = 'swig.bat'
-    const shFilename = 'swig'
-    const helpMessage = `Run this script with 'help' param for more info`
-    const isTsNode = process.argv[3] === 'ts-node'
-
-    const bat = `@echo off\nREM ${helpMessage}\nnode ./node_modules/swig-cli/dist/esm/swigCli.js %*`
-    const sh = `#!/bin/bash\n# ${helpMessage}\nnode ./node_modules/swig-cli/dist/esm/swigCli.js $@`
-
-    const tsNodeBat = `@echo off\nREM ${helpMessage}\nnode ./node_modules/.bin/ts-node -T ./node_modules/swig-cli/dist/cjs/swigCli.cjs %*`
-    const tsNodeSh = `#!/bin/bash\n# ${helpMessage}\nnode ./node_modules/.bin/ts-node -T ./node_modules/swig-cli/dist/cjs/swigCli.cjs $@`
-
-    const batPath = path.resolve(this.cwd, batFilename)
-    const shPath = path.resolve(this.cwd, shFilename)
-
-    fs.writeFileSync(batPath, isTsNode ? tsNodeBat : bat, { encoding: 'utf8' })
-    fs.writeFileSync(shPath, isTsNode ? tsNodeSh : sh, { encoding: 'utf8' })
-
-    const additionalTsMessage = isTsNode ? ' pointing to ts-node' : ''
-    log(`Generated wrapper files ${cyan(shFilename)} and ${cyan(batFilename)}${additionalTsMessage}`)
-    log(`Don't forget to run '${cyan('chmod +x swig')}' to make swig executable if you are on Linux or Mac`)
-
-    return this.okExit()
   }
 
   private async main() {
@@ -296,10 +269,6 @@ export default class Swig {
 
     if (cliParam.value === this.helpCommand.id) {
       return this.showHelpMessage()
-    }
-
-    if (cliParam.matches(this.generateWrapperFilesCommand)) {
-      return this.generateWrapperFiles()
     }
 
     if (!taskFilePathOrUrl) {
