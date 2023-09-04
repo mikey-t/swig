@@ -30,7 +30,7 @@ Clean up:
 
 ## Tsc Watch Gotcha
 
-Running `npm run watch` (just `tsc --watch` currently) will use the default tsconfig.json, which is the ESM version, so you don't see any live changes if you're in the CJS example project. I haven't had a strong need to do live CJS testing yet since most paths go through the ESM version (pretty much everything except typescript in a commonjs project). If I do end up needing that, I'll want to add an additional package.json alias for `watchCjs` or something that passes the other tsconfig file. But will still need to remember that the startup wrapper script is pointed to the ESM version, so testing live start wrapper changes at the same time as CJS Swig.cjs isn't supported without some other changes.
+Running `npm run watch` (just `tsc --watch` currently) will use the default tsconfig.json, which is the ESM version. To also watch and update the CJS version in `dist`, run `npm watch:cjs` in another terminal.
 
 ## Why the CJS version?
 

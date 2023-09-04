@@ -3,7 +3,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { log, possibleTaskFileNames, trace, yellow } from './Swig.js'
-import { spawnSync } from 'node:child_process'
+import { spawn } from 'node:child_process'
 
 type ProjectType = 'esm' | 'commonjs'
 type SwigfileExtension = 'mjs' | 'cjs' | 'js' | 'ts'
@@ -16,7 +16,7 @@ export default class SwigStartupWrapper {
 
   constructor() { }
 
-  main() {
+  main(): Promise<SpawnResult> {
     trace('- SwigStartupWrapper is checking a few things...')
 
     this.populateSwigfilePathOrThrow()
@@ -31,7 +31,7 @@ export default class SwigStartupWrapper {
     return this.spawnSwig()
   }
 
-  private spawnSwig() {
+  private async spawnSwig(): Promise<SpawnResult> {
     const preservedArgs = process.argv.slice(2)
     const isTypescript = this.swigfileExtension === 'ts'
 
@@ -60,11 +60,9 @@ export default class SwigStartupWrapper {
     const command = 'node'
     const spawnArgs = isTypescript ? [tsNodeBin, '-T', swigScript, ...preservedArgs] : [swigScript, ...preservedArgs]
 
-    trace('- spawnArgs: ', spawnArgs)
+    trace(`- command: ${command} ${spawnArgs.join(' ')}`)
 
-    const result = spawnSync(command, spawnArgs, { stdio: 'inherit', shell: true })
-
-    return result.status
+    return spawnAsync(command, spawnArgs)
   }
 
   private populateSwigfilePathOrThrow() {
@@ -189,11 +187,48 @@ export default class SwigStartupWrapper {
   }
 }
 
-try {
-  new SwigStartupWrapper().main()
-} catch (err) {
-  console.error(err)
-  process.exit(1)
+interface SpawnResult {
+  code: number
+  error?: Error
 }
 
-process.exit(0)
+export function spawnAsync(command: string, args: string[]): Promise<SpawnResult> {
+  return new Promise((resolve) => {
+    const result: SpawnResult = {
+      code: 99
+    }
+
+    const child = spawn(command, args, { stdio: 'inherit' })
+    
+    child.on('close', (code) => {
+      result.code = code ?? 99
+      resolve(result)
+    })
+
+    child.on('exit', (code) => {
+      result.code = code ?? 99
+      resolve(result)
+    })
+
+    child.on('error', (error) => {
+      result.error = error
+      resolve(result)
+    })
+
+    process.on('SIGINT', () => {
+      child.kill('SIGINT')
+    })
+  })
+}
+
+new SwigStartupWrapper().main()
+  .then((result: SpawnResult) => {
+    if (result.error) {
+      console.error(result.error)
+    }
+    process.exit(result.code)
+  }
+  ).catch(err => {
+    console.error(err)
+    process.exit(42)
+  })
