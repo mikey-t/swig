@@ -60,9 +60,9 @@ export default class SwigStartupWrapper {
     const command = 'node'
     const spawnArgs = isTypescript ? [tsNodeBin, '-T', swigScript, ...preservedArgs] : [swigScript, ...preservedArgs]
 
-    trace(`- command: ${command} ${spawnArgs.join(' ')}`)
+    trace(`- swig-cli spawn command: ${command} ${spawnArgs.join(' ')}`)
 
-    return spawnAsync(command, spawnArgs)
+    return spawnSwigCliAsync(command, spawnArgs)
   }
 
   private populateSwigfilePathOrThrow() {
@@ -192,31 +192,49 @@ interface SpawnResult {
   error?: Error
 }
 
-export function spawnAsync(command: string, args: string[]): Promise<SpawnResult> {
+export function spawnSwigCliAsync(command: string, args: string[]): Promise<SpawnResult> {
   return new Promise((resolve) => {
-    const result: SpawnResult = {
-      code: 99
-    }
+    const result: SpawnResult = { code: 1 }
+    const prefix = `[spawnSwigCliAsync] `
 
     const child = spawn(command, args, { stdio: 'inherit' })
-    
-    child.on('close', (code) => {
-      result.code = code ?? 99
+    const childId = child.pid
+    if (!childId) {
+      throw new Error(`${prefix}Error spawning ChildProcess`)
+    }
+
+    const exitListener = (code: number) => {
+      child.kill()
+      child.unref()
+      result.code = code
       resolve(result)
+    }
+    process.on('exit', exitListener)
+
+    const signals: NodeJS.Signals[] = ['SIGINT', 'SIGTERM', 'SIGQUIT']
+
+    const signalListener = (signal: NodeJS.Signals) => {
+      trace(`${prefix}Process received ${signal} - killing ChildProcess with ID ${childId}`)
+      child.kill(signal)
+    }
+
+    signals.forEach((signal) => {
+      process.on(signal, signalListener)
     })
 
-    child.on('exit', (code) => {
-      result.code = code ?? 99
+    child.on('exit', (code, signal) => {
+      trace(`${prefix}ChildProcess exited with code ${code} and signal ${signal}`)
+      result.code = code ?? 1
+      process.removeListener('exit', exitListener)
+      signals.forEach((signal) => {
+        process.removeListener(signal, signalListener)
+      })
+      child.removeAllListeners()
       resolve(result)
     })
 
     child.on('error', (error) => {
-      result.error = error
-      resolve(result)
-    })
-
-    process.on('SIGINT', () => {
-      child.kill('SIGINT')
+      trace(`${prefix}ChildProcess emitted an error event: `, error)
     })
   })
 }
