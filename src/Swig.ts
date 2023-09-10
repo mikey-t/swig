@@ -103,7 +103,7 @@ export default class Swig {
 
   // Don't call directly - see exports in src/index.ts. Also see TaskOrNamedTask for more info.
   parallel(...tasks: TaskOrNamedTask[]): Task {
-    const parallelInner = async () => {
+    const innerParallel = async () => {
       const promises: Promise<void>[] = tasks.map(task => {
         return this.runTask(this.getLogNameAndTask(task))
       })
@@ -114,7 +114,7 @@ export default class Swig {
         throw errors
       }
     }
-    return parallelInner
+    return innerParallel
   }
 
   private async runTask(logNameAndTask: LogNameAndTask) {
@@ -131,11 +131,11 @@ export default class Swig {
       return { logName: taskOrNamedTask[0], task: taskOrNamedTask[1] }
     } else {
       let name = taskOrNamedTask.name
-      if (name === 'seriesInner') {
-        name = `nested_${name}_${this.seriesCounter.toString()}`.replace('Inner', '')
+      if (name === 'innerSeries') {
+        name = `nested_series_${this.seriesCounter.toString()}`
         this.seriesCounter++
-      } else if (name === 'parallelInner') {
-        name = `nested_${name}_${this.parallelCounter.toString()}`.replace('Inner', '')
+      } else if (name === 'innerParallel') {
+        name = `nested_parallel_${this.parallelCounter.toString()}`
         this.parallelCounter++
       } else if (!name) {
         name = 'anonymous'

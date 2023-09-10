@@ -28,11 +28,12 @@ export { Task, NamedTask, TaskOrNamedTask }
  * ```
  */
 export const series = (first: TaskOrNamedTask, ...rest: TaskOrNamedTask[]): Task => {
-  return async () => {
+  const innerSeries = async () => {
     const swigInstance = getSwigInstance()
     const instanceSeries = swigInstance.series(first, ...rest)
     return instanceSeries()
   }
+  return innerSeries
 }
 
 /**
@@ -61,9 +62,10 @@ export const series = (first: TaskOrNamedTask, ...rest: TaskOrNamedTask[]): Task
  * ```
  */
 export const parallel = (first: TaskOrNamedTask, ...rest: TaskOrNamedTask[]): Task => {
-  return async () => {
+  const innerParallel = async () => {
     const swigInstance = getSwigInstance()
     const instanceParallel = swigInstance.parallel(first, ...rest)
     return instanceParallel()
   }
+  return innerParallel
 }
