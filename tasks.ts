@@ -1,5 +1,6 @@
 import { SpawnOptions, spawn } from 'node:child_process'
-import { existsSync, rmdirSync, mkdirSync, readdirSync, renameSync, readFileSync, writeFileSync } from 'node:fs'
+import * as fs from 'node:fs'
+import * as fsp from 'node:fs/promises'
 
 const traceEnabled = true
 const TS_TS_NODE = 'swig-example-typescript-ts-node'
@@ -31,13 +32,13 @@ async function main() {
       await runInExamples('npm', ['install'], allExamples)
       break
     case 'cleanPackedDir':
-      cleanPackedDir()
+      await cleanDir('./packed')
       break
     case 'updateCjsOutput':
-      updateCjsOutput()
+      await updateCjsOutput()
       break
     case 'insertVersionNumbers':
-      insertVersionNumbers()
+      await insertVersionNumbers()
       break
     case 'updateExampleDependencies':
       await updateExampleDependencies(allExamples)
@@ -52,7 +53,7 @@ async function main() {
       updateExampleDependencies([TS_TS_NODE])
       break
     case 'cleanDist':
-      cleanDist()
+      await cleanDir('./dist')
       break
     case 'smokeTest':
       await runInExamples('npm', ['run', 'transpileSwigfile'], [TS_ESM], traceEnabled)
@@ -154,24 +155,17 @@ async function runInExamples(command: string, args: string[], examples: string[]
   }
 }
 
-function cleanPackedDir() {
-  if (existsSync('./packed')) {
-    rmdirSync('./packed', { recursive: true })
+async function cleanDir(dir: string) {
+  if (fs.existsSync(dir)) {
+    await fsp.rm(dir, { recursive: true })
   }
-  mkdirSync('./packed')
-}
-
-function cleanDist() {
-  if (existsSync('./dist')) {
-    rmdirSync('./dist', { recursive: true })
-  }
-  mkdirSync('./dist')
+  await fsp.mkdir(dir)
 }
 
 async function updateExampleDependencies(examplesToUpdate: string[]) {
   log('- updating example projects with dependency on packed version of swig-cli')
   const packedDir = './packed'
-  const files = readdirSync(packedDir)
+  const files = await fsp.readdir(packedDir)
   if (!files) {
     exit(1, '- Error: no files found in packed dir')
   }
@@ -184,61 +178,61 @@ async function updateExampleDependencies(examplesToUpdate: string[]) {
   await runInExamples('npm', ['i', '-D', relativePackedPath], examplesToUpdate)
 }
 
-function updateCjsOutput() {
-  const filenames = readdirSync(cjsOutputDir)
+async function updateCjsOutput() {
+  const filenames = await fsp.readdir(cjsOutputDir)
   for (const filename of filenames) {
     if (!filename.includes('.js')) {
       continue
     }
     const oldPath = `${cjsOutputDir}/${filename}`
     const newPath = `${cjsOutputDir}/${filename.replace('.js', '.cjs')}`
-    renameSync(oldPath, newPath)
+    await fsp.rename(oldPath, newPath)
   }
 
-  const updatedFilenames = readdirSync(cjsOutputDir)
+  const updatedFilenames = await fsp.readdir(cjsOutputDir)
   for (const filename of updatedFilenames) {
-    updateCjsFileContents(cjsOutputDir, filename)
+    await updateCjsFileContents(cjsOutputDir, filename)
   }
 
-  const packageJson = readFileSync('./package.cjs.json', 'utf8')
-  writeFileSync(`${cjsOutputDir}/package.json`, packageJson, 'utf8')
+  const packageJson = await fsp.readFile('./package.cjs.json', { encoding: 'utf8' })
+  await fsp.writeFile(`${cjsOutputDir}/package.json`, packageJson, { encoding: 'utf8' })
 }
 
 // Do replacements (except in special file where we only do one replacement):
 // .js" -> .cjs"
 // .js' -> .cjs'
 // .js.map -> .cjs.map
-function updateCjsFileContents(dir: string, filename: string) {
+async function updateCjsFileContents(dir: string, filename: string) {
   const filePath = `${dir}/${filename}`
-  const fileContents = readFileSync(filePath, 'utf8')
+  const fileContents = await fsp.readFile(filePath, { encoding: 'utf8' })
   let newFileContents = fileContents
   if (filename !== primaryCodeFilenameCjs) {
     newFileContents = newFileContents.replace(/\.js"/g, '.cjs"')
     newFileContents = newFileContents.replace(/\.js'/g, '.cjs\'')
   }
   newFileContents = newFileContents.replace(/\.js\.map/g, '.cjs.map')
-  writeFileSync(filePath, newFileContents, 'utf8')
+  await fsp.writeFile(filePath, newFileContents, { encoding: 'utf8' })
 }
 
-function insertVersionNumbers() {
-  const packageJson = readFileSync('./package.json', 'utf8')
+async function insertVersionNumbers() {
+  const packageJson = await fsp.readFile('./package.json', { encoding: 'utf8' })
   const packageJsonObj = JSON.parse(packageJson)
   const version = packageJsonObj.version
 
   const esmFile = `${esmOutputDir}/${primaryCodeFilenameEsm}`
   const cjsFile = `${cjsOutputDir}/${primaryCodeFilenameCjs}`
 
-  insertVersionNumber(esmFile, version)
-  insertVersionNumber(cjsFile, version)
+  await insertVersionNumber(esmFile, version)
+  await insertVersionNumber(cjsFile, version)
 }
 
-function insertVersionNumber(file: string, version: string) {
-  let fileContents = readFileSync(file, 'utf8')
-  if (!existsSync(file)) {
+async function insertVersionNumber(file: string, version: string) {
+  let fileContents = await fsp.readFile(file, 'utf8')
+  if (!fs.existsSync(file)) {
     log(`skipped inserting version because of missing file: ${file}`)
   }
   fileContents = fileContents.replace(/__VERSION__/g, version)
-  writeFileSync(file, fileContents, 'utf8')
+  await fsp.writeFile(file, fileContents, { encoding: 'utf8' })
 }
 
 function exit(exitCode: number, messageOrError: unknown) {
