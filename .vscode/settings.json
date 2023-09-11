@@ -1,11 +1,20 @@
 {
-    "[javascript]": {
-        "editor.autoIndent": "full",
-        "editor.trimAutoWhitespace": false
-    },
-    "cSpell.words": [
-        "howfat",
-        "swigfile",
-        "swigfiles"
-    ]
+  "[javascript]": {
+    "editor.autoIndent": "full",
+    "editor.trimAutoWhitespace": false
+  },
+  "[typescript]": {
+    "editor.autoIndent": "full",
+    "editor.trimAutoWhitespace": false
+  },
+  "javascript.preferences.quoteStyle": "single",
+  "typescript.preferences.quoteStyle": "single",
+  "javascript.format.semicolons": "remove",
+  "typescript.format.semicolons": "remove",
+  "typescript.tsserver.experimental.enableProjectDiagnostics": true,
+  "cSpell.words": [
+    "howfat",
+    "swigfile",
+    "swigfiles"
+  ]
 }
