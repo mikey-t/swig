@@ -5,12 +5,13 @@ import * as fsp from 'node:fs/promises'
 const traceEnabled = true
 const TS_CJS = 'swig-example-typescript-cjs'
 const TS_ESM = 'swig-example-typescript-esm'
+const TS_TSX = 'swig-example-typescript-tsx'
 const TS_TRANSPILED = 'swig-example-typescript-transpiled'
 const CJS = 'swig-example-commonjs'
 const CJS_MJS = 'swig-example-commonjs-mjs'
 const ESM = 'swig-example-esm'
 const ESM_CJS = 'swig-example-esm-cjs'
-const allExamples = [TS_CJS, TS_ESM, TS_TRANSPILED, CJS, CJS_MJS, ESM, ESM_CJS]
+const allExamples = [TS_CJS, TS_ESM, TS_TSX, TS_TRANSPILED, CJS, CJS_MJS, ESM, ESM_CJS]
 const primaryCodeFilenameEsm = 'Swig.js'
 const primaryCodeFilenameCjs = 'Swig.cjs'
 const cjsOutputDir = './dist/cjs'

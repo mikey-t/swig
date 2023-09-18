@@ -2,6 +2,10 @@
 
 This doc is for misc dev notes about how to setup and use project, issues and gotchas, decisions made, future plans, etc.
 
+## tsx instead of ts-node
+
+If you're using a typescript swigfile you can use [tsx](https://github.com/esbuild-kit/tsx) instead of ts-node. It's unclear how stable this is so I'm not advertising this on the main readme yet. So far though... it does seem to work and seems quite fast (shorter startup delay than ts-node). To use this just install `tsx` as a dev dependency in your project with `npm i -D tsx`.
+
 ## Why Swig Instead of Gulp
 
 Some contributing factors that led me to create swig:

@@ -13,6 +13,7 @@ export default class SwigStartupWrapper {
   private swigfileName: string = ''
   private packageJsonType: ProjectType = 'commonjs'
   private swigfileExtension: SwigfileExtension = 'js'
+  private hasTsx: boolean = false
 
   constructor() { }
 
@@ -56,15 +57,17 @@ export default class SwigStartupWrapper {
       tsNodeBin = tsNodeBinCjs
     }
 
-    if (!fs.existsSync(swigScript)) {
-      log(`The npm package 'swig-cli' must be installed for the swig command to work - install as a dev dependency with 'npm i -D swig-cli'`)
-    }
-    if (isTypescript && !fs.existsSync(tsNodeBin)) {
-      throw new Error(`Swigfile.ts is typescript but ts-node was not found in node_modules - install as a dev dependency with 'npm i -D ts-node`)
+    if (isTypescript && !this.hasTsx && !fs.existsSync(tsNodeBin)) {
+      this.exitWithError(`typescript detected but ts-node was not found in node_modules - install as a dev dependency with 'npm i -D ts-node`)
     }
 
     const command = 'node'
-    const spawnArgs = isTypescript ? [tsNodeBin, '-T', swigScript, ...preservedArgs] : [swigScript, ...preservedArgs]
+    let spawnArgs = [swigScript, ...preservedArgs]
+    if (isTypescript && this.hasTsx) {
+      spawnArgs = ['--no-warnings', '--loader', 'tsx', ...spawnArgs]
+    } else if (isTypescript) {
+      spawnArgs = [tsNodeBin, '-T', swigScript, ...preservedArgs]
+    }
 
     trace(`- swig-cli spawn command: ${command} ${spawnArgs.join(' ')}`)
 
@@ -94,20 +97,25 @@ export default class SwigStartupWrapper {
     const packageJsonContents = fs.readFileSync(packageJsonPath, { encoding: 'utf-8' })
     const packageJson = JSON.parse(packageJsonContents)
     this.packageJsonType = packageJson.type && packageJson.type.toLowerCase() === 'module' ? 'esm' : 'commonjs'
-    
+
     // Check that swig-cli is installed as a dependency or devDependency
     if ((packageJson.devDependencies && packageJson.devDependencies['swig-cli']) || (packageJson.dependencies && packageJson.dependencies['swig-cli'])) {
       trace('- swig-cli is installed as a dependency in the project')
     } else {
       this.exitWithError(`swig-cli was not found in the project dependencies or devDependencies - install with: npm i -D swig-cli`)
     }
+
+    if ((packageJson.devDependencies && packageJson.devDependencies['tsx']) || (packageJson.dependencies && packageJson.dependencies['tsx'])) {
+      this.hasTsx = true
+      trace('- tsx is installed as a dependency in the project')
+    }
   }
 
   private warnIfPossibleSwigfileSyntaxMismatch() {
     const swigfileContents = fs.readFileSync(this.swigfilePath, { encoding: 'utf-8' })
-    
+
     if (swigfileContents.trim() === '') return
-    
+
     if (!swigfileContents) {
       throw new Error(`Error parsing swigfile ${this.swigfilePath}`)
     }
@@ -176,7 +184,7 @@ export default class SwigStartupWrapper {
   private logWarning(str: string) {
     log(`\n${yellow('[swig-cli] Warning:')} ${str}`)
   }
-  
+
   private exitWithError(message: string) {
     log(`${red('[swig-cli] Error:')} ${message}`)
     process.exit(1)
