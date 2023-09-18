@@ -3,13 +3,14 @@ import * as fs from 'node:fs'
 import * as fsp from 'node:fs/promises'
 
 const traceEnabled = true
-const TS_TS_NODE = 'swig-example-typescript-ts-node'
+const TS_CJS = 'swig-example-typescript-cjs'
 const TS_ESM = 'swig-example-typescript-esm'
+const TS_TRANSPILED = 'swig-example-typescript-transpiled'
 const CJS = 'swig-example-commonjs'
 const CJS_MJS = 'swig-example-commonjs-mjs'
 const ESM = 'swig-example-esm'
 const ESM_CJS = 'swig-example-esm-cjs'
-const allExamples = [TS_TS_NODE, TS_ESM, CJS, CJS_MJS, ESM, ESM_CJS]
+const allExamples = [TS_CJS, TS_ESM, TS_TRANSPILED, CJS, CJS_MJS, ESM, ESM_CJS]
 const primaryCodeFilenameEsm = 'Swig.js'
 const primaryCodeFilenameCjs = 'Swig.cjs'
 const cjsOutputDir = './dist/cjs'
@@ -50,14 +51,21 @@ async function main() {
       updateExampleDependencies([CJS])
       break
     case 'updateTsExampleDependency':
-      updateExampleDependencies([TS_TS_NODE])
+      updateExampleDependencies([TS_CJS])
       break
     case 'cleanDist':
       await cleanDir('./dist')
       break
     case 'smokeTest':
-      await runInExamples('npm', ['run', 'transpileSwigfile'], [TS_ESM], traceEnabled)
+      await runInExamples('npm', ['run', 'transpileSwigfile'], [TS_TRANSPILED], traceEnabled)
       await runInExamples('npx', ['swig', 'list'], allExamples, traceEnabled)
+      break
+    case 'unlinkExamples':
+      await unlinkExamples()
+      break
+    case 'linkExamples':
+      await unlinkExamples()
+      await linkExamples()
       break
     default:
       log(`- task not found: ${task}`)
@@ -121,7 +129,14 @@ async function runInExamples(command: string, args: string[], examples: string[]
   for (const example of examples) {
     const cwd = `./examples/${example}/`
     log(`- running ${fullCommand} in example project ${example}`)
-    promises.push(spawnAsync(command, args, { cwd }))
+
+    // Hack so that 'npm link swig-cli' works on windows with Volta installed
+    let additionalArgs = {}
+    if (args.length > 0 && args[0] === 'link') {
+      additionalArgs = { env: process.env, shell: true, stdio: 'inherit' }
+    }
+
+    promises.push(spawnAsync(command, args, { cwd, ...additionalArgs }))
   }
   const promiseResults = await Promise.allSettled(promises) as PromiseSettledResult<SpawnResult>[]
   const rejected = promiseResults.filter(r => r.status === 'rejected') as PromiseRejectedResult[]
@@ -233,6 +248,16 @@ async function insertVersionNumber(file: string, version: string) {
   }
   fileContents = fileContents.replace(/__VERSION__/g, version)
   await fsp.writeFile(file, fileContents, { encoding: 'utf8' })
+}
+
+async function unlinkExamples() {
+  await runInExamples('npm', ['unlink', 'swig-cli'], allExamples, true)
+}
+
+async function linkExamples() {
+  await runInExamples('npm', ['rm', 'swig-cli'], allExamples, true)
+  await runInExamples('npm', ['i', '-D', 'swig-cli'], allExamples, true)
+  await runInExamples('npm', ['link', 'swig-cli'], allExamples, true)
 }
 
 function exit(exitCode: number, messageOrError: unknown) {

@@ -1,6 +1,6 @@
 {
   "name": "swig-cli",
-  "version": "0.0.9",
+  "version": "0.0.10",
   "description": "Swig is a simple CLI tool for automating dev workflows via compositions of series and parallel tasks.",
   "repository": {
     "type": "git",
@@ -36,12 +36,13 @@
     "updateExamples": "npm run build && npm run pack && ts-node-esm tasks.ts updateExampleDependencies",
     "updateExamplesAndSmokeTest": "npm run updateExamples && ts-node-esm tasks.ts smokeTest",
     "smokeTest": "ts-node-esm tasks.ts smokeTest",
+    "unlinkExamples": "ts-node-esm tasks.ts unlinkExamples",
+    "linkExamples": "ts-node-esm tasks.ts linkExamples",
     "publishOnly": "npm publish"
   },
   "files": [
     "package.json",
     "dist/",
-    "src/",
     "readme.md",
     "LICENSE"
   ],

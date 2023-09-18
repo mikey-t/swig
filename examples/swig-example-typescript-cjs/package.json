@@ -1,8 +1,8 @@
 {
   "name": "swig-example-typescript-ts-node",
   "version": "1.0.0",
-  "description": "Example usage of swig using typescript and ts-node.",
-  "type": "module",
+  "description": "Example usage of swig using typescript and ts-node with package.json type of commonjs.",
+  "type": "commonjs",
   "scripts": {},
   "keywords": [],
   "author": "Mike Thompson",
@@ -11,7 +11,7 @@
     "node": "18.17.1"
   },
   "devDependencies": {
-    "swig-cli": "file:../../packed/swig-cli-0.0.9.tgz",
+    "swig-cli": "file:../../packed/swig-cli-0.0.10.tgz",
     "ts-node": "^10.9.1"
   }
 }

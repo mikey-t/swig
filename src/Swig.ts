@@ -145,7 +145,11 @@ export default class Swig {
   }
 
   private getTimestampPrefix(date: Date) {
-    return `[${gray(date.toLocaleTimeString('en-US', { hour12: true }))}]`
+    const hours = String(date.getHours()).padStart(2, '0')
+    const minutes = String(date.getMinutes()).padStart(2, '0')
+    const seconds = String(date.getSeconds()).padStart(2, '0')
+    const milliseconds = String(date.getMilliseconds()).padStart(3, '0')
+    return gray(`[${hours}:${minutes}:${seconds}.${milliseconds}]`)
   }
 
   private logFormattedStartMessage(taskName: string, startTimestamp: number) {
@@ -281,6 +285,9 @@ export default class Swig {
       module = await import(taskFilePathOrUrl.toString())
       tasks = Object.entries(module).filter(([, value]) => this.isFunction(value))
     } catch (err) {
+      if (taskFilePathOrUrl.toString().endsWith('.ts') && err instanceof Error && err.message.includes('exports is not defined')) {
+        console.log(`${yellow('Suggestion:')} try adjusting your tsconfig.json compilerOptions (especially the "module" setting)`)
+      }
       console.error(err)
       return this.failureExit(`Could not import task file ${taskFilePathOrUrl}`)
     }

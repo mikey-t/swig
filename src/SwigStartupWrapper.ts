@@ -19,14 +19,20 @@ export default class SwigStartupWrapper {
   main(): Promise<SpawnResult> {
     trace('- SwigStartupWrapper is checking a few things...')
 
-    this.populateSwigfilePathOrThrow()
-    trace(`- swigfile: ${this.swigfilePath}`)
-    trace(`- swigfile extension: ${this.swigfileExtension}`)
+    const hasSwigfile = this.populateSwigfile()
+    if (hasSwigfile) {
+      trace(`- swigfile: ${this.swigfilePath}`)
+      trace(`- swigfile extension: ${this.swigfileExtension}`)
+    }
 
     this.populatePackageJsonTypeOrThrow()
     trace(`- package.json type: ${this.packageJsonType}`)
 
-    this.warnIfPossibleSwigfileSyntaxMismatch()
+    if (hasSwigfile) {
+      this.warnIfPossibleSwigfileSyntaxMismatch()
+    } else {
+      trace(`- swigfile not found - skipping syntax check`)
+    }
 
     return this.spawnSwig()
   }
@@ -65,7 +71,7 @@ export default class SwigStartupWrapper {
     return spawnSwigCliAsync(command, spawnArgs)
   }
 
-  private populateSwigfilePathOrThrow() {
+  private populateSwigfile(): boolean {
     let swigfilePath: string
     for (const filename of possibleTaskFileNames) {
       swigfilePath = `./${filename}`
@@ -73,10 +79,11 @@ export default class SwigStartupWrapper {
         this.swigfilePath = swigfilePath
         this.swigfileName = path.basename(this.swigfilePath)
         this.swigfileExtension = this.swigfileName.split('.')[1] as SwigfileExtension
-        return
+        return true
       }
     }
-    throw new Error(`Swigfile not found - can be one of the following: ${possibleTaskFileNames.join(', ')}`)
+
+    return false
   }
 
   private populatePackageJsonTypeOrThrow() {
@@ -90,11 +97,10 @@ export default class SwigStartupWrapper {
   }
 
   private warnIfPossibleSwigfileSyntaxMismatch() {
-    if (this.swigfileExtension === 'ts') {
-      return
-    }
-
     const swigfileContents = fs.readFileSync(this.swigfilePath, { encoding: 'utf-8' })
+    
+    if (swigfileContents.trim() === '') return
+    
     if (!swigfileContents) {
       throw new Error(`Error parsing swigfile ${this.swigfilePath}`)
     }
@@ -102,57 +108,35 @@ export default class SwigStartupWrapper {
 
     const hasEsmSyntax = this.fileStringHasEsm(swigfileContentsWithoutComments)
     const hasCommonJsSyntax = this.fileStringHasCommonJs(swigfileContentsWithoutComments)
+    const hasBoth = hasEsmSyntax && hasCommonJsSyntax
 
-    if (this.swigfileExtension === 'mjs') {
-      // .mjs can be used regardless of package.json "type", so we're only checking that syntax is indeed mjs
-      if (hasEsmSyntax && !hasCommonJsSyntax) {
-        return
-      } else if (!hasEsmSyntax && !hasCommonJsSyntax) {
-        this.logWarning(`could not detect whether ${this.swigfileName} has valid syntax - it should use ESM, but detected neither ESM nor CommonJS (you may not have added any exported functions or imported anything yet)`)
-      } else if (!hasEsmSyntax && hasCommonJsSyntax) {
-        this.logWarning(`${this.swigfileName} appears to use CommonJS syntax but the file has the '.${this.swigfileExtension}' file extension, which means it should be ESM syntax (or you could also just rename your swigfile to use the '.${this.swigfileExtension}' file extension)`)
-      } else {
-        this.logWarning(`${this.swigfileName} appears to have both ESM and CommonJS syntax, but it should have only ESM syntax because of the '.${this.swigfileExtension}' file extension`)
-      }
+    // Don't warn - it might just be a new project with nothing exported or imported yet
+    if (!hasEsmSyntax && !hasCommonJsSyntax) return
+
+    // Typescript allows both cjs and esm syntax, even mixed - as long as the package.json type is commonjs
+    if (this.swigfileExtension === 'ts' && this.packageJsonType === 'commonjs') return
+
+    if (this.swigfileExtension === 'ts' && this.packageJsonType === 'esm' && (hasBoth || hasCommonJsSyntax)) {
+      this.logWarning(`${this.swigfileName} needs to use only ESM syntax if the package.json type is set to "module".`)
+      this.logOptionsMatrix()
+      return
     }
 
-    if (this.swigfileExtension === 'cjs') {
-      // .cjs can be used regardless of package.json "type", so we're only checking that syntax is indeed cjs
-      if (!hasEsmSyntax && hasCommonJsSyntax) {
-        return
-      } else if (!hasEsmSyntax && !hasCommonJsSyntax) {
-        this.logWarning(`could not detect whether ${this.swigfileName} has valid syntax - it should use CommonJS, but detected neither ESM nor CommonJS (you may not have added any exported functions or added any 'require()' statements yet)`)
-      } else if (hasEsmSyntax && !hasCommonJsSyntax) {
-        this.logWarning(`${this.swigfileName} appears to use ESM syntax but the file has the '.${this.swigfileExtension}' file extension, which means it should be CommonJS syntax (or you could also just rename your swigfile to use the '.${this.swigfileExtension}' file extension)`)
-      } else {
-        this.logWarning(`${this.swigfileName} appears to have both ESM and CommonJS syntax, but it should have only CommonJS syntax because of the '.${this.swigfileExtension}' file extension`)
-      }
+    if (hasBoth) {
+      this.logWarning(`${this.swigfileName} appears to have both ESM and CommonJS syntax, but it should have only one or the other.`)
+      this.logOptionsMatrix()
+      return
     }
 
-    if (this.swigfileExtension === 'js') {
-      // It depends on the package.json "type" is set to "module" or not that determines what syntax is allowed in the swigfile.js
-      if (this.packageJsonType === 'esm') {
-        if (hasEsmSyntax && !hasCommonJsSyntax) {
-          return
-        } else if (!hasEsmSyntax && !hasCommonJsSyntax) {
-          this.logWarning(`could not detect whether ${this.swigfileName} has valid syntax - it should use ESM, but detected neither ESM nor CommonJS (you may not have added any exported functions or imported anything yet)`)
-        } else if (!hasEsmSyntax && hasCommonJsSyntax) {
-          this.logWarning(`${this.swigfileName} appears to use CommonJS syntax but package.json "type" is set to "module", which means it should be ESM syntax (you could remove the "type" property from package.json, or you could also just rename your swigfile to use the '.cjs' file extension)`)
-        } else {
-          this.logWarning(`${this.swigfileName} appears to have both ESM and CommonJS syntax, but package.json "type" is set to "module", which means it should have only ESM syntax`)
-        }
-      } else { // packageJsonType === 'commonjs'
-        if (!hasEsmSyntax && hasCommonJsSyntax) {
-          return
-        } else if (!hasEsmSyntax && !hasCommonJsSyntax) {
-          this.logWarning(`could not detect whether ${this.swigfileName} has valid syntax - it should use CommonJS, but detected neither ESM nor CommonJS (you may not have added any exported functions or added any 'require()' statements yet)`)
-        } else if (hasEsmSyntax && !hasCommonJsSyntax) {
-          this.logWarning(`${this.swigfileName} appears to use ESM syntax but package.json "type" is not set to "module", which means it should be CommonJS syntax (you can change your package.json "type" to "module" or you could also just rename your swigfile to use the '.mjs' file extension)`)
-        } else {
-          this.logWarning(`${this.swigfileName} appears to have both ESM and CommonJS syntax, but package.json "type" is not set to "module", which means it should have only CommonJS syntax`)
-        }
-      }
-    }
+    if (this.swigfileExtension === 'mjs' && hasEsmSyntax && !hasCommonJsSyntax) return
+    if (this.swigfileExtension === 'cjs' && !hasEsmSyntax && hasCommonJsSyntax) return
+    if (this.swigfileExtension === 'js' && this.packageJsonType === 'esm' && hasEsmSyntax) return
+    if (this.swigfileExtension === 'js' && this.packageJsonType === 'commonjs' && hasCommonJsSyntax) return
+    if (this.swigfileExtension === 'ts' && this.packageJsonType === 'commonjs') return
+    if (this.swigfileExtension === 'ts' && this.packageJsonType === 'esm' && hasEsmSyntax) return
+
+    this.logWarning(`${this.swigfileExtension} appears to use ${hasEsmSyntax ? 'ESM' : 'CommonJS'} syntax and your package.json type is set to ${this.packageJsonType}.`)
+    this.logOptionsMatrix()
   }
 
   private fileStringHasEsm(fileContent: string): boolean {
@@ -183,7 +167,40 @@ export default class SwigStartupWrapper {
   }
 
   private logWarning(str: string) {
-    log(`\n${yellow('Warning:')} ${str}\n`)
+    log(`\n${yellow('[swig-cli] Warning:')} ${str}`)
+  }
+
+  private logOptionsMatrix() {
+    const optionsData = [
+      ['swigfile', 'package.json type', 'syntax', 'notes'],
+      ['.cjs', 'any', 'CommonJS', ''],
+      ['.mjs', 'any', 'ESM', ''],
+      ['.js', 'module', 'ESM', ''],
+      ['.js', 'commonjs', 'CommonJS', ''],
+      ['.ts', 'module', 'ESM', 'can be affected by tsconfig.json settings'],
+      ['.ts', 'commonjs', 'CommonJS and/or ESM', 'can be affected by tsconfig.json settings']
+    ]
+    log('\nAvailable configurations:\n')
+    this.logTable(optionsData)
+    log('')
+  }
+
+  private logTable(data: string[][]): void {
+    if (data.length === 0 || data[0].length === 0) return
+
+    const numColumns = data[0].length
+    const columnWidths: number[] = []
+    for (let i = 0; i < numColumns; i++) {
+      columnWidths[i] = Math.max(...data.map(row => row[i]?.length || 0))
+    }
+
+    const lineSeparator = ' ' + columnWidths.map(width => '-'.repeat(width)).join(' + ')
+
+    for (let i = 0; i < data.length; i++) {
+      const paddedRowArray = data[i].map((cell, colIdx) => cell.padEnd(columnWidths[colIdx], ' '))
+      log(' ' + paddedRowArray.join(' | '))
+      if (i === 0) log(lineSeparator)
+    }
   }
 }
 

@@ -2,21 +2,39 @@
 
 This doc is for misc dev notes about how to setup and use project, issues and gotchas, decisions made, future plans, etc.
 
+## Why Swig Instead of Gulp
+
+Some contributing factors that led me to create swig:
+
+- Security warnings in gulp
+- Gulp codebase seems less well-maintained than in the past
+- Gulp documentation is partially out of date
+- The size of gulp and the depth of it's dependency tree. Running `npx howfat@latest gulp` tells me it has approximately 3489 files, 459 transitive dependencies and 9.6MB.
+- The complexity of gulp:
+  - Gulp has a lot of opinionated filesystem manipulation, but the built-in NodeJS library `fs` has everything I need
+  - I just need some very basic glue - I don't want all the opinionated error handling logic
+  - I don't need an entire plugin architecture - I'm just gluing other things together
+  - I don't need my collection of dev automation tasks to be runnable by CI - I just need a spot to automate all my local dev tasks
+  - I don't need tools like a custom file watcher, I just need something to glue together other better tools
+- I want to have more control over how it works
+- I want easier setup with various different javascript and typescript flavors
+- Gulp is hard to type...
+
 ## Startup Wrapper Script
 
 There's some magic here that allows a lot of flexibility without the user really having to do much or know much about what's happening under the hood (or passing additional parameters, etc). In my first attempt at swig I had 2 executables: one for esm and one for cjs. And I forced the consumer to know which they should use and had lots of instructions in the readme about it. On top of that there were yet more instructions for typescript and there were all sorts of gotchas and scenarios that didn't quite work right.
 
-The `SwigStartupWrapper` is the solution to that. Now there is only one executable, and in that startup logic, it does a bunch of checking of things to make sure it'll work and to conditionally choose the right combo of scripts to run, and whether to run ts-node or ts-node-esm if a typescript swigfile is present. Rather than continuing in the same startup process (that is always initially ESM), it spawns a new child process with whatever is needed, thus bypassing the need to explain all this to the consumer.
+The `SwigStartupWrapper` is the solution to that. Now there is only one executable, and in that startup logic, it does a bunch of checking of things to make sure it'll work and to conditionally choose the right combo of scripts to run, and whether to run ts-node or ts-node-esm if a typescript swigfile is present. Rather than continuing in the same startup process (that is always initially ESM), it spawns a new child process with whatever is needed, thus bypassing the need to explain all this to the user.
 
 There are some obvious downsides to the specific implementation I've got going (see the TODO section below), but generally this seems to provide a much better user experience.
 
-In addition to providing the mentioned flexibility, it also accidentally fixed an issue where running with an npm alias or npx was causing dash parameters to be hijacked by npm/npx. Which could really add a lot of confusion and headache for when consumers start defining tasks that evaluate process.argv for additional options, and those options are broken because of npm. Instead, the new process getting spawned is calling node directly, so npm/npx has no chance to screw things up.
+In addition to providing flexibility, the startup script also accidentally fixed an issue where running with an npm alias or npx was causing dash parameters to be hijacked by npm/npx. Which could really add a lot of confusion and headache for when consumers start defining tasks that evaluate process.argv for additional options, and those options are broken because of npm. Instead, the new process getting spawned is calling node directly, so npm/npx has no chance to screw things up.
 
 ## Rapid `Swig.ts` Dev Loop
 
 Setup:
 
-- In project root: `npm link`. This acts like installing it globally, which gives you the executable (`swig`) and allows other project to run `npm link swig-cli` to symlink to your live files (see below).
+- In project root: `npm link`. This acts like installing it globally, which gives you the executable (`swig`) and allows other project to run `npm link swig-cli` to symlink to live files.
 - In example dir:
     - `npm link swig-cli`. To see what's currently linked, you can run `npm ls --link=true`
 - Now you can run commands in the example project dir to test using the global executable (e.g. `swig` instead of `npx swig`). This works because of the link command in the root of the project.
@@ -34,17 +52,17 @@ Running `npm run watch` (just `tsc --watch` currently) will use the default tsco
 
 ## Why the CJS version?
 
-It turns out you can get around the fact that ESM can't dynamically import a typescript file by using commonjs instead (which surprising can do this!). This is how I'm getting away with not transpiling the typescript swigfile before importing it - I'm just using the CJS version of swig for this scenario. Sneaky. But may want to look into a more robust solution if people start actually using this...
+It turns out you can get around the fact that ESM can't dynamically import a typescript file by using commonjs instead (which surprising can do this!). This is how I'm getting away with not transpiling the typescript swigfile before importing it - I'm just using the CJS version of swig for this scenario. Sneaky. But may want to look into a more robust solution in case this doesn't work out in some scenarios.
 
 This is a little confusing because when I'm calling ts-node, it's not on a .ts file, so it goes like this:
 
 swig -> SwigStartupWrapper -> node spawn child process -> Swig.cjs -> imports swigfile.ts dynamically
 
-So the entry is always ESM, but really it's a combination of ts-node and the cjs version of the script that enables the dynamic typescript file import. There's probably other better ways to do this, which I'll look into.
+So the entry is always ESM, but really it's a combination of ts-node and the cjs version of the script that enables the dynamic typescript file import. There might be other better ways to do this - I'll look into it.
 
 ## Volta Gotcha with Global Node CLI
 
-This section assumes you're using volta for managing node/npm on your machine.
+I'm using Volta for managing node/npm on my machine - you can ignore this if you don't use Volta.
 
 If you install a new version of `swig-cli` globally with `volta install swig-cli@latest`, it will correctly get the new version and install it, but if you run `swig` with this new version in a directory of a project that has an older version of `swig-cli` installed (so it's swigfile can import `series`/`parallel`), it will use the older version in the project-local node_modules. The volta folks advertise this as intended and the better way to handle global tools, which kinda makes sense I suppose. But kind of pain in this scenario.
 
@@ -52,7 +70,7 @@ If this ends up being a real problem, I might have to split the executable and t
 
 ## What's with all the Async Wrappers?
 
-(read that title in Jerry Seinfeld's voice)
+(you should read that in Jerry Seinfeld's voice)
 
 The trick to this whole operation is that you want to be able to import a javascript file and define pipelines using this syntax:
 
@@ -73,6 +91,7 @@ There might be other (and maybe better?) ways to do this, but javascript is actu
     - Override ts-node paths
     - Set alternate swigfile location
     - Suppress warnings from startup checks (such as for dual typescript/non-typescript swigfile where consumer is doing their own transpilation)
+- Look into using tsx for typescript execution instead of ts-node (or in addition to as another option)
 
 ## TODO - address direct node_modules access issue
 
