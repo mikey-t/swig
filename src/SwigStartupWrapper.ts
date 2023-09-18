@@ -89,11 +89,18 @@ export default class SwigStartupWrapper {
   private populatePackageJsonTypeOrThrow() {
     const packageJsonPath = './package.json'
     if (!fs.existsSync(packageJsonPath)) {
-      this.exitWithError('No package.json found - cannot detect project type')
+      this.exitWithError('no package.json found - cannot detect project type')
     }
     const packageJsonContents = fs.readFileSync(packageJsonPath, { encoding: 'utf-8' })
     const packageJson = JSON.parse(packageJsonContents)
     this.packageJsonType = packageJson.type && packageJson.type.toLowerCase() === 'module' ? 'esm' : 'commonjs'
+    
+    // Check that swig-cli is installed as a dependency or devDependency
+    if ((packageJson.devDependencies && packageJson.devDependencies['swig-cli']) || (packageJson.dependencies && packageJson.dependencies['swig-cli'])) {
+      trace('- swig-cli is installed as a dependency in the project')
+    } else {
+      this.exitWithError(`swig-cli was not found in the project dependencies or devDependencies - install with: npm i -D swig-cli`)
+    }
   }
 
   private warnIfPossibleSwigfileSyntaxMismatch() {
