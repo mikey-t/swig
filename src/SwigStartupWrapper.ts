@@ -2,7 +2,7 @@
 
 import fs from 'node:fs'
 import path from 'node:path'
-import { log, possibleTaskFileNames, trace, yellow } from './Swig.js'
+import { log, possibleTaskFileNames, red, trace, yellow } from './Swig.js'
 import { spawn } from 'node:child_process'
 
 type ProjectType = 'esm' | 'commonjs'
@@ -89,7 +89,7 @@ export default class SwigStartupWrapper {
   private populatePackageJsonTypeOrThrow() {
     const packageJsonPath = './package.json'
     if (!fs.existsSync(packageJsonPath)) {
-      throw new Error('Missing package.json - cannot detect project type')
+      this.exitWithError('No package.json found - cannot detect project type')
     }
     const packageJsonContents = fs.readFileSync(packageJsonPath, { encoding: 'utf-8' })
     const packageJson = JSON.parse(packageJsonContents)
@@ -168,6 +168,11 @@ export default class SwigStartupWrapper {
 
   private logWarning(str: string) {
     log(`\n${yellow('[swig-cli] Warning:')} ${str}`)
+  }
+  
+  private exitWithError(message: string) {
+    log(`${red('[swig-cli] Error:')} ${message}`)
+    process.exit(1)
   }
 
   private logOptionsMatrix() {

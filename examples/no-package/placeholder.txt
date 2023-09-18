@@ -1,0 +1,1 @@
+Running swig in a directory with no package.json should print out a simple error message.
