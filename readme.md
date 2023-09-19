@@ -61,7 +61,10 @@ If there are multiple swigfiles in your project directory, swig will use the fir
 | `.ts`    | commonjs            | ESM and/or CommonJS | Must have valid `tsconfig.json` options |
 | `.ts`    | module              | ESM                 | Must have valid `tsconfig.json` options |
 
-Note that use of typescript for your swigfile requires `ts-node` to be installed locally in your project as a dev dependency. Also note for typescript that your `tsconfig.json`, if you have one, needs to have settings that match whatever package.json type and swigfile.ts syntax you're using or you'll get an error when swig tries to dynamically import your swigfile. Specifically pay attention to the tsconfig.json option `compilerOptions` -> `module`. For example, if you're using package.json `type` of `module` and using `ESM` syntax in your `swigfile.ts`, then you probably want your `tsconfig.json` configured to `ESNext` or something similar for the compilerOptions module setting.
+If using typescript:
+
+- You must install either `ts-node` or `tsx` as a dev dependency in your project. Note that `tsx` ESM functionality is advertised as being experimental, but it seems to work well. You can install one of these by running `npm i -D ts-node` or `npm i -D tsx`.
+- Your `tsconfig.json` needs to have settings that match your `package.json` type. For example, if you have your `package.json` type field set to `module`, then your `tsconfig.json` needs to have a `module` setting of "ES2020" or "ESNext" (something that supports ESM).
 
 ## Series, Parallel and Composability Example
 

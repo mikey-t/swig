@@ -1,5 +1,5 @@
 {
-  "name": "swig-example-typescript-ts-node",
+  "name": "swig-example-typescript-cjs",
   "version": "1.0.0",
   "description": "Example usage of swig using typescript and ts-node with package.json type of commonjs.",
   "type": "commonjs",
@@ -11,7 +11,7 @@
     "node": "18.17.1"
   },
   "devDependencies": {
-    "swig-cli": "file:../../packed/swig-cli-0.0.12.tgz",
+    "swig-cli": "file:../../packed/swig-cli-0.0.14.tgz",
     "ts-node": "^10.9.1"
   }
 }

@@ -2,7 +2,7 @@
 
 ## Async vs Sync Functions and Typescript Method Signatures
 
-You can technically pass non-async functions to `series` and `parallel`, but it's not recommended - it may lead to subtle bugs, so just mark your functions with `async` even if there's no `await` being used. You will also notice that if you're using a typescript swigfile and you have type checking, it will complain about any functions not matching these types (you'll get an error like `Argument of type '() => void' is not assignable to parameter of type 'TaskOrNamedTask'`):
+You can technically pass non-async functions to `series` and `parallel`, but it's not recommended - it may lead to subtle bugs, so just mark your functions with `async` even if there's nothing async happening. You will also notice that if you're using a typescript swigfile and you have type checking, it will complain about any functions not matching these types (you'll get an error like `Argument of type '() => void' is not assignable to parameter of type 'TaskOrNamedTask'`):
 
 ```Typescript
 export type Task = () => Promise<any>
@@ -127,19 +127,29 @@ If you have more complicated error behavior requirements, there's lots of ways t
 
 ## Typescript Notes
 
-For a typescript swigfile.ts to work, you need to install [`ts-node`](https://typestrong.org/ts-node/docs/) as a local dependency.
+For a typescript swigfile.ts to work, you need to install [ts-node](https://typestrong.org/ts-node/docs/) as a local dependency. Or alternatively you can use [tsx](https://github.com/esbuild-kit/tsx) (note that ESM functionality is currently advertised as being experimental, but it seems to work).
 
-Note that I'm using the `-T` option under the hood to speed up execution ([`--transpileOnly`](https://typestrong.org/ts-node/docs/options#transpileonly)). There's valid reasons not to use this, but I generally rely on the IDE along with plugins like eslint plugins to find "compile-time" errors when I'm using ts-node in a dev situation rather than slowing down the execution with these type of checks. And if you don't use a good IDE for some reason, you'll still get some of the errors - you'll just see them at a slightly different spot in the execution process. But there are plenty of scenarios where this will let you shoot yourself in the foot, so be aware if you're writing code in Notepad.exe or something. In the future I'd like to allow overriding swig's default ts-node config so this and other ts-node options can be changed.
+For ts-node, note that I'm using the `-T` option under the hood to speed up execution ([`--transpileOnly`](https://typestrong.org/ts-node/docs/options#transpileonly)). There's valid reasons not to use this, but I generally rely on the IDE along with plugins like eslint plugins to find "compile-time" errors when I'm using ts-node in a dev situation rather than slowing down the execution with these type of checks. And if you don't use a good IDE for some reason, you'll still get some of the errors - you'll just see them at a slightly different spot in the execution process. But there are plenty of scenarios where this will let you shoot yourself in the foot, so be aware if you're writing code in Notepad.exe or something. In the future I'd like to allow overriding swig's default ts-node config so this and other ts-node options can be changed.
 
 If you don't want to install ts-node or want to do your own transpilation, you can have 2 swigfiles in your directory and it'll pick the first one it finds, starting with the non-typescript versions. So if you have `swigfile.ts` file and maybe you have it automatically being transpiled to `swigfile.js`, then swig will pick up and use the `swigfile.js` version instead of using ts-node. Don't forget to setup live watching of your swigfile if you're actively making changes and re-running it (such as with `tsc --watch` or whatever tool you're using).You wouldn't want to end up scratching your head because something isn't doing what you think it should, only because it doesn't have your latest changes.
 
 ## Recommended Usage
 
-My recommendation is to install `swig-cli` as as global npm package (`npm i -g swig-cli`) because it will run much faster (no initial delay - see below), and you can type less. Also, if you use this on many projects like I do, you don't have to remember to add npm aliases to each project.
+My recommendation is to install `swig-cli` as as global npm package (`npm i -g swig-cli`) because it will run much faster (no initial delay from npm/npx - see below), and you can type less. Also, if you use this on many projects like I do, you don't have to remember to add npm aliases to each project.
 
 My opinion is that running stuff through npx and npm aliases is annoying because of the initial delay on each startup. For me this delay can be anywhere between 1 second and 4-8 seconds for some reason. That's not all that long, but it feels like an eternity when running a task that should only take a few milliseconds. This is why I prefer and recommend using a global install of `swig-cli` so you can call `swig` directly without incurring the startup delay.
 
-If you choose to setup an npm alias anyway, you can create a simple alias that points node to your local node_modules instance of swig:
+## Using Npx
+
+If you choose not to install `swig-cli` globally (see above) and don't want to use npm aliases (see below), then you simply prefix all your commands with `npx`:
+
+```
+npx swig yourTask
+```
+
+## Npm Aliases
+
+This isn't the recommended approach, but if you choose to use npm aliases anyway, you could setup a single alias this this:
 
 ```json
 "scripts": {
@@ -153,7 +163,7 @@ And then call it with :
 npm run swig yourTask
 ```
 
-Or if you really like npm aliases and have lots of them and want to document each dev automation task in your package.json, you might alias individual tasks like this:
+Or if you really like npm aliases for each individual task, then you could do something like this:
 
 ```json
 "scripts": {
@@ -163,16 +173,17 @@ Or if you really like npm aliases and have lots of them and want to document eac
 }
 ```
 
-So that you can run stuff like this:
+So that you can run your tasks like this:
 
-```bash
+```
 npm run build
 npm run test
 npm run swig someOtherTask
 ```
 
-## Other Commands
+But just to re-iterate, using npm aliases isn't the recommended approach. The idea behind swig is to be able to run `swig` and quickly see all the available commands without even having to open the package.json file or experience the slowness of npm.
 
+## Other Commands
 
 Use the command `swig help` to see other available commands:
 

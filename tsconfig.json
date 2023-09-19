@@ -23,8 +23,5 @@
     "node_modules",
     "packed",
     "test"
-  ],
-  "ts-node": {
-    "swc": true
-  }
+  ]
 }

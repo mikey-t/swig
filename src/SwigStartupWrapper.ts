@@ -2,7 +2,7 @@
 
 import fs from 'node:fs'
 import path from 'node:path'
-import { log, possibleTaskFileNames, red, trace, yellow } from './Swig.js'
+import Swig, { log, possibleTaskFileNames, red, trace, yellow } from './Swig.js'
 import { spawn } from 'node:child_process'
 
 type ProjectType = 'esm' | 'commonjs'
@@ -58,7 +58,7 @@ export default class SwigStartupWrapper {
     }
 
     if (isTypescript && !this.hasTsx && !fs.existsSync(tsNodeBin)) {
-      this.exitWithError(`typescript detected but ts-node was not found in node_modules - install as a dev dependency with 'npm i -D ts-node`)
+      this.exitWithError(`typescript detected but a dev dependency is missing.\nChoose and install either ts-node or tsx using 'npm i -D ts-node' or 'npm i -D tsx' (note that tsx esm functionality is experimental).`)
     }
 
     const command = 'node'
@@ -71,7 +71,7 @@ export default class SwigStartupWrapper {
 
     trace(`- swig-cli spawn command: ${command} ${spawnArgs.join(' ')}`)
 
-    return spawnSwigCliAsync(command, spawnArgs)
+    return this.spawnSwigCliAsync(command, spawnArgs)
   }
 
   private populateSwigfile(): boolean {
@@ -222,6 +222,53 @@ export default class SwigStartupWrapper {
       if (i === 0) log(lineSeparator)
     }
   }
+
+  private spawnSwigCliAsync(command: string, args: string[]): Promise<SpawnResult> {
+    return new Promise((resolve) => {
+      const result: SpawnResult = { code: 1 }
+      const prefix = `[spawnSwigCliAsync] `
+
+      const child = spawn(command, args, { stdio: 'inherit' })
+      const childId = child.pid
+      if (!childId) {
+        throw new Error(`${prefix}Error spawning ChildProcess`)
+      }
+
+      const exitListener = (code: number) => {
+        child.kill()
+        child.unref()
+        result.code = code
+        resolve(result)
+      }
+      process.on('exit', exitListener)
+
+      const signals: NodeJS.Signals[] = ['SIGINT', 'SIGTERM', 'SIGQUIT']
+
+      const signalListener = (signal: NodeJS.Signals) => {
+        trace(`${prefix}Process received ${signal} - killing ChildProcess with ID ${childId}`)
+        child.kill(signal)
+      }
+
+      signals.forEach((signal) => {
+        process.on(signal, signalListener)
+      })
+
+      child.on('exit', (code, signal) => {
+        trace(`${prefix}ChildProcess exited with code ${code} and signal ${signal}`)
+        result.code = code ?? 1
+        process.removeListener('exit', exitListener)
+        signals.forEach((signal) => {
+          process.removeListener(signal, signalListener)
+        })
+        child.removeAllListeners()
+        resolve(result)
+      })
+
+      child.on('error', (error) => {
+        trace(`${prefix}ChildProcess emitted an error event: `, error)
+      })
+    })
+  }
 }
 
 interface SpawnResult {
@@ -229,61 +276,22 @@ interface SpawnResult {
   error?: Error
 }
 
-export function spawnSwigCliAsync(command: string, args: string[]): Promise<SpawnResult> {
-  return new Promise((resolve) => {
-    const result: SpawnResult = { code: 1 }
-    const prefix = `[spawnSwigCliAsync] `
-
-    const child = spawn(command, args, { stdio: 'inherit' })
-    const childId = child.pid
-    if (!childId) {
-      throw new Error(`${prefix}Error spawning ChildProcess`)
+const firstArg = process.argv.slice(2)[0]
+if (['h', 'help', '-h', '--help', 'v', 'version', '-v', '--version'].includes(firstArg)) {
+  // If first arg is version or help, skip all checks and go straight to
+  // calling Swig since all it needs to do is print some text and exit.
+  trace(`- SwigStartupWrapper is skipping checks because the command is ${firstArg}`)
+  new Swig().runMainAsync()
+} else {
+  new SwigStartupWrapper().main()
+    .then((result: SpawnResult) => {
+      if (result.error) {
+        console.error(result.error)
+      }
+      process.exit(result.code)
     }
-
-    const exitListener = (code: number) => {
-      child.kill()
-      child.unref()
-      result.code = code
-      resolve(result)
-    }
-    process.on('exit', exitListener)
-
-    const signals: NodeJS.Signals[] = ['SIGINT', 'SIGTERM', 'SIGQUIT']
-
-    const signalListener = (signal: NodeJS.Signals) => {
-      trace(`${prefix}Process received ${signal} - killing ChildProcess with ID ${childId}`)
-      child.kill(signal)
-    }
-
-    signals.forEach((signal) => {
-      process.on(signal, signalListener)
+    ).catch(err => {
+      console.error(err)
+      process.exit(42)
     })
-
-    child.on('exit', (code, signal) => {
-      trace(`${prefix}ChildProcess exited with code ${code} and signal ${signal}`)
-      result.code = code ?? 1
-      process.removeListener('exit', exitListener)
-      signals.forEach((signal) => {
-        process.removeListener(signal, signalListener)
-      })
-      child.removeAllListeners()
-      resolve(result)
-    })
-
-    child.on('error', (error) => {
-      trace(`${prefix}ChildProcess emitted an error event: `, error)
-    })
-  })
 }
-
-new SwigStartupWrapper().main()
-  .then((result: SpawnResult) => {
-    if (result.error) {
-      console.error(result.error)
-    }
-    process.exit(result.code)
-  }
-  ).catch(err => {
-    console.error(err)
-    process.exit(42)
-  })

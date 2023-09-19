@@ -1,7 +1,7 @@
 {
-  "name": "swig-example-commonjs",
+  "name": "swig-example-cjs-mjs",
   "version": "1.0.0",
-  "description": "Example swig usage with a CommonJS project (package.json) and CommonJS swigfile.js.",
+  "description": "Example swig usage with a CommonJS project (package.json) and ESM swigfile.mjs.",
   "type": "commonjs",
   "scripts": {},
   "keywords": [],
@@ -11,6 +11,6 @@
     "node": "18.17.1"
   },
   "devDependencies": {
-    "swig-cli": "file:../../packed/swig-cli-0.0.12.tgz"
+    "swig-cli": "file:../../packed/swig-cli-0.0.14.tgz"
   }
 }

@@ -1,7 +1,7 @@
 {
   "name": "swig-example-typescript-tsx",
   "version": "1.0.0",
-  "description": "",
+  "description": "Swig example usage with tsx instead of ts-node",
   "main": "index.js",
   "type": "module",
   "scripts": {},
@@ -9,7 +9,7 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "swig-cli": "file:../../packed/swig-cli-0.0.12.tgz",
+    "swig-cli": "file:../../packed/swig-cli-0.0.14.tgz",
     "tsx": "^3.12.10"
   }
 }
