@@ -16,5 +16,7 @@
     "howfat",
     "swigfile",
     "swigfiles"
-  ]
+  ],
+  "typescript.preferences.importModuleSpecifier": "relative",
+  "javascript.preferences.importModuleSpecifier": "relative"
 }

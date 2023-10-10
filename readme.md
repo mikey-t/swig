@@ -4,18 +4,15 @@ Swig is a simple CLI tool for automating dev workflows via compositions of serie
 
 ## Why Swig Instead of Gulp?
 
-Why recreate the `series` and `parallel` functions that Gulp already has? I thank the gulp maintainers for all their work, but I wanted to move on to something better suited to my needs. For a list of contributing factors, see [./docs/SwigDevNotes.md#why-swig-instead-of-gulp](./docs/SwigDevNotes.md#why-swig-instead-of-gulp). 
+Why recreate the `series`, `parallel` and task runner functionality that Gulp already has? Gulp is great, but I wanted to be able to customize how it works, strip out all the complexity and add the ability to use a variety of javascript/typescript flavors with little or no extra setup required.
 
 ## Getting Started
 
 - (Optional) Install `swig-cli` globally for convenient shortened commands and much faster task execution (no initial delay from npm/npx):
-
 ```bash
 npm i -g swig-cli@latest
 ```
-
 - Install `swig-cli` package as a dev dependency so you can import `series` and `parallel`:
-
 ```bash
 npm i -D swig-cli
 ```
