@@ -4,14 +4,14 @@ import * as fsp from 'node:fs/promises'
 
 const traceEnabled = true
 
-const TS_CJS =        'swig-example-typescript-cjs'
-const TS_ESM =        'swig-example-typescript-esm'
-const TS_TSX =        'swig-example-typescript-tsx'
+const TS_CJS = 'swig-example-typescript-cjs'
+const TS_ESM = 'swig-example-typescript-esm'
+const TS_TSX = 'swig-example-typescript-tsx'
 const TS_TRANSPILED = 'swig-example-typescript-transpiled'
 
-const CJS =     'swig-example-cjs'
+const CJS = 'swig-example-cjs'
 const CJS_MJS = 'swig-example-cjs-mjs'
-const ESM =     'swig-example-esm'
+const ESM = 'swig-example-esm'
 const ESM_CJS = 'swig-example-esm-cjs'
 
 const allExamples = [TS_CJS, TS_ESM, TS_TSX, TS_TRANSPILED, CJS, CJS_MJS, ESM, ESM_CJS]
@@ -64,13 +64,6 @@ async function main() {
     case 'smokeTest':
       await runInExamples('npm', ['run', 'transpileSwigfile'], [TS_TRANSPILED], traceEnabled)
       await runInExamples('npx', ['swig', 'list'], allExamples, traceEnabled)
-      break
-    case 'unlinkExamples':
-      await unlinkExamples()
-      break
-    case 'linkExamples':
-      await unlinkExamples()
-      await linkExamples()
       break
     default:
       log(`- task not found: ${task}`)
@@ -255,16 +248,6 @@ async function insertVersionNumber(file: string, version: string) {
   await fsp.writeFile(file, fileContents, { encoding: 'utf8' })
 }
 
-async function unlinkExamples() {
-  await runInExamples('npm', ['unlink', 'swig-cli'], allExamples, true)
-}
-
-async function linkExamples() {
-  await runInExamples('npm', ['rm', 'swig-cli'], allExamples, true)
-  await runInExamples('npm', ['i', '-D', 'swig-cli'], allExamples, true)
-  await runInExamples('npm', ['link', 'swig-cli'], allExamples, true)
-}
-
 function exit(exitCode: number, messageOrError: unknown) {
   if (exitCode > 0) {
     console.error(messageOrError)
@@ -287,4 +270,3 @@ main().then(() => {
 }).catch(err => {
   exit(1, err)
 })
-

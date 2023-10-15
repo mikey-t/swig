@@ -85,6 +85,10 @@ swig build
 npx swig build
 ```
 
+## Example Projects
+
+See [dotnet-react-sandbox](https://github.com/mikey-t/dotnet-react-sandbox) and it's use of [swig-cli-modules](https://github.com/mikey-t/swig-cli-modules) to encapsulate tasks for projects that use it as a template.
+
 ## Additional Documentation
 
 - [./docs/SwigSupplementalDocumentation.md](./docs/SwigSupplementalDocumentation.md)

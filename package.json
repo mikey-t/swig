@@ -1,6 +1,6 @@
 {
   "name": "swig-cli",
-  "version": "0.0.14",
+  "version": "0.0.15",
   "description": "Swig is a simple CLI tool for automating dev workflows via compositions of series and parallel tasks.",
   "repository": {
     "type": "git",
@@ -35,10 +35,7 @@
     "pack": "node --no-warnings --loader tsx tasks.ts cleanPackedDir && npm pack --pack-destination packed",
     "updateExamples": "npm run build && npm run pack && node --no-warnings --loader tsx tasks.ts updateExampleDependencies",
     "updateExamplesAndSmokeTest": "npm run updateExamples && node --no-warnings --loader tsx tasks.ts smokeTest",
-    "smokeTest": "node --no-warnings --loader tsx tasks.ts smokeTest",
-    "unlinkExamples": "node --no-warnings --loader tsx tasks.ts unlinkExamples",
-    "linkExamples": "node --no-warnings --loader tsx tasks.ts linkExamples",
-    "publishOnly": "npm publish"
+    "smokeTest": "node --no-warnings --loader tsx tasks.ts smokeTest"
   },
   "files": [
     "package.json",

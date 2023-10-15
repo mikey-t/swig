@@ -115,3 +115,7 @@ export const build = series(
   ['copyClientBuild', () => copyDirectory(clientBuildDir, clientReleaseDir)],
   ['copyServerBuild', () => copyDirectory(serverBuildDir, serverReleaseDir)]
 )
+
+export class MyClass {
+  constructor() {}
+}

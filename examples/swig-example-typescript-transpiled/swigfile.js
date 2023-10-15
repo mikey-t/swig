@@ -27,6 +27,11 @@ function _async_to_generator(fn) {
         });
     };
 }
+function _class_call_check(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+        throw new TypeError("Cannot call a class as a function");
+    }
+}
 function _ts_generator(thisArg, body) {
     var f, y, t, g, _ = {
         label: 0,
@@ -216,4 +221,8 @@ export var withNamedAnon = series(task1, [
         });
     })
 ]);
+export var MyClass = function MyClass() {
+    "use strict";
+    _class_call_check(this, MyClass);
+};
 

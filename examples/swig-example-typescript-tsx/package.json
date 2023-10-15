@@ -9,7 +9,7 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "swig-cli": "file:../../packed/swig-cli-0.0.14.tgz",
+    "swig-cli": "file:../../packed/swig-cli-0.0.15.tgz",
     "tsx": "^3.12.10"
   }
 }

@@ -116,9 +116,6 @@ export default class SwigStartupWrapper {
 
     if (swigfileContents.trim() === '') return
 
-    if (!swigfileContents) {
-      throw new Error(`Error parsing swigfile ${this.swigfilePath}`)
-    }
     const swigfileContentsWithoutComments = this.stripComments(swigfileContents)
 
     const hasEsmSyntax = this.fileStringHasEsm(swigfileContentsWithoutComments)
@@ -231,7 +228,7 @@ export default class SwigStartupWrapper {
       const child = spawn(command, args, { stdio: 'inherit' })
       const childId = child.pid
       if (!childId) {
-        throw new Error(`${prefix}Error spawning ChildProcess`)
+        trace(`${prefix}ChildProcess pid is undefined - spawn failed - an error event should be emitted shortly`)
       }
 
       const exitListener = (code: number) => {
@@ -265,7 +262,7 @@ export default class SwigStartupWrapper {
       })
 
       child.on('error', (error) => {
-        trace(`${prefix}ChildProcess emitted an error event: `, error)
+        throw error
       })
     })
   }

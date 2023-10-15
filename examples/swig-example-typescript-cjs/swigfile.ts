@@ -35,3 +35,7 @@ export const withAnon = series(task1, async () => { console.log('This is a conso
 export const withNamedAnon = series(task1, ['helloWorld', async () => { console.log('This is a console message from a named anonymous task called helloWorld') }])
 
 exports.mixedEsmCommonJs = task5
+
+export class MyClass {
+  constructor() {}
+}

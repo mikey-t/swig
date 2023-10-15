@@ -3,7 +3,9 @@ import fs from 'node:fs'
 import { pathToFileURL } from 'node:url'
 
 export const traceEnabled = false
-const showMode = true // In the startup message, display whether the ESM or CommonJS version of this script is being run
+
+const showModeInStartMessage = false
+const showHelpInStartMessage = false
 
 /**
  * Any function that is async or returns a Promise.
@@ -127,6 +129,7 @@ export default class Swig {
   }
 
   private getLogNameAndTask(taskOrNamedTask: TaskOrNamedTask): LogNameAndTask {
+    this.throwIfNotActuallyATaskOrNamedTask(taskOrNamedTask)
     if (Array.isArray(taskOrNamedTask)) {
       return { logName: taskOrNamedTask[0], task: taskOrNamedTask[1] }
     } else {
@@ -141,6 +144,17 @@ export default class Swig {
         name = 'anonymous'
       }
       return { logName: name, task: taskOrNamedTask }
+    }
+  }
+
+  private throwIfNotActuallyATaskOrNamedTask(taskOrNamedTask: TaskOrNamedTask) {
+    const errorMessage = `A param was not a Task (function) or a NamedTask ([string,function] tuple): ${taskOrNamedTask}`
+    if (Array.isArray(taskOrNamedTask)) {
+      if ((taskOrNamedTask.length !== 2 || typeof taskOrNamedTask[0] !== 'string' || !this.isFunction(taskOrNamedTask[1]))) {
+        throw new Error(errorMessage)
+      }
+    } else if (!this.isFunction(taskOrNamedTask)) {
+      throw new Error(errorMessage)
     }
   }
 
@@ -159,15 +173,41 @@ export default class Swig {
 
   private logFormattedEndMessage(taskName: string, endTimestamp: number, duration: number) {
     const prefix = `${this.getTimestampPrefix(new Date(endTimestamp))} `
-    log(`${prefix}Finished ✅ ${cyan(taskName)} after ${purple(this.formatElapsedDuration(duration))}`)
+    log(`${prefix}Finished ✅ ${cyan(taskName)} after ${purple(this.humanizeTime(duration))}`)
   }
 
-  private formatElapsedDuration(elapsedMs: number) {
-    if (elapsedMs < 1000) {
-      return `${elapsedMs} ms`
-    } else {
-      return `${(elapsedMs / 1000).toFixed(2)} seconds`
+  private humanizeTime(milliseconds: number): string {
+    let value: number
+    let unit: string
+
+    if (milliseconds < 1000) {
+      return `${milliseconds} ms`
     }
+
+    if (milliseconds < 60000) {
+      value = milliseconds / 1000
+      unit = 'second'
+    } else if (milliseconds < 3600000) {
+      value = milliseconds / 60000
+      unit = 'minute'
+    } else {
+      value = milliseconds / 3600000
+      unit = 'hour'
+    }
+
+    let stringValue = value.toFixed(2)
+
+    if (stringValue.endsWith('.00')) {
+      stringValue = stringValue.slice(0, -3)
+    } else if (stringValue.endsWith('0')) {
+      stringValue = stringValue.slice(0, -1)
+    }
+
+    if (stringValue !== '1') {
+      unit += 's'
+    }
+
+    return `${stringValue} ${unit}`
   }
 
   private getTaskFilePath(): URL | string | null {
@@ -185,17 +225,17 @@ export default class Swig {
 
   private getStartMessage(taskFilePath: string, cliParam: CliParam): string {
     const commandOrTaskMessage = cliParam.isCommand ? 'Command' : 'Task'
-    const helpMessage = `${gray('use ')}swig help ${gray('for more info')}`
+    const helpMessage = `[ ${gray('use ')}swig help ${gray('for more info')} ]`
     const taskFilename = taskFilePath ? path.basename(taskFilePath) : ''
     const modeMessage = `[ Mode: ${cyan(this.isEsm ? 'ESM' : 'CommonJS')} ]`
     const versionMessage = `Version: ${cyan(this.versionString)}`
-    return `[ ${commandOrTaskMessage}: ${cyan(cliParam.value)} ][ Swigfile: ${cyan(taskFilename)} ][ ${versionMessage} ]${showMode ? modeMessage : ''}[ ${helpMessage} ]`
+    return `[ ${commandOrTaskMessage}: ${cyan(cliParam.value)} ][ Swigfile: ${cyan(taskFilename)} ][ ${versionMessage} ]${showModeInStartMessage ? modeMessage : ''}${showHelpInStartMessage ? helpMessage : ''}`
   }
 
   private getFinishedMessage(mainStartTime: number, hasErrors?: boolean): string {
     const totalDuration = Date.now() - mainStartTime
     const statusMessage = `Result: ${hasErrors ? red('failed') : green('success')}`
-    const durationMessage = `Total duration: ${color(this.formatElapsedDuration(totalDuration), hasErrors ? AnsiColor.YELLOW : AnsiColor.GREEN)}`
+    const durationMessage = `Total duration: ${color(this.humanizeTime(totalDuration), hasErrors ? AnsiColor.YELLOW : AnsiColor.GREEN)}`
     return `[ ${statusMessage} ][ ${durationMessage} ]`
   }
 
@@ -220,20 +260,17 @@ export default class Swig {
   }
 
   private isFunction(task: unknown): boolean {
-    return !!task && typeof task === 'function'
+    return typeof task === 'function' && !(task.prototype && task.prototype.constructor === task)
   }
 
   private showTaskList(tasks: TasksMap, mainStartTime: number, filter?: string) {
     const taskNames = tasks.map(([name,]) => name)
     log(`Available tasks:`)
     for (const taskName of taskNames) {
-      const taskFn = tasks.find(([name,]) => name === taskName)?.[1]
-      if (this.isFunction(taskFn)) {
-        if (filter && !taskName.toLowerCase().includes(filter.toLowerCase())) {
-          continue
-        }
-        log(`  ${cyan(taskName)}`)
+      if (filter && !taskName.toLowerCase().includes(filter.toLowerCase())) {
+        continue
       }
+      log(`  ${cyan(taskName)}`)
     }
     log(this.getFinishedMessage(mainStartTime))
     return this.okExit()
@@ -360,28 +397,13 @@ export enum AnsiColor {
   PURPLE = '\x1b[35m'
 }
 
-class Colors {
-  private constructor() { }
-  private static instance: Colors
-
-  static getInstance(): Colors {
-    if (!Colors.instance) {
-      Colors.instance = new Colors()
-    }
-    return Colors.instance
-  }
-
-  color(str: string, colorAnsiCode: AnsiColor): string {
-    return `${colorAnsiCode}${str}${AnsiColor.RESET}`
-  }
+const color = (str: string, colorAnsiCode: AnsiColor): string => {
+  return `${colorAnsiCode}${str}${AnsiColor.RESET}`
 }
 
-const singletonColors = Colors.getInstance()
-
-export const red = (str: string) => singletonColors.color(str, AnsiColor.RED)
-export const green = (str: string) => singletonColors.color(str, AnsiColor.GREEN)
-export const cyan = (str: string) => singletonColors.color(str, AnsiColor.CYAN)
-export const gray = (str: string) => singletonColors.color(str, AnsiColor.GRAY)
-export const purple = (str: string) => singletonColors.color(str, AnsiColor.PURPLE)
-export const yellow = (str: string) => singletonColors.color(str, AnsiColor.YELLOW)
-export const color = (str: string, color: AnsiColor) => singletonColors.color(str, color)
+export const red = (str: string) => color(str, AnsiColor.RED)
+export const green = (str: string) => color(str, AnsiColor.GREEN)
+export const cyan = (str: string) => color(str, AnsiColor.CYAN)
+export const gray = (str: string) => color(str, AnsiColor.GRAY)
+export const purple = (str: string) => color(str, AnsiColor.PURPLE)
+export const yellow = (str: string) => color(str, AnsiColor.YELLOW)

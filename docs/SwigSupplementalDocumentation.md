@@ -2,7 +2,7 @@
 
 ## Async vs Sync Functions and Typescript Method Signatures
 
-You can technically pass non-async functions to `series` and `parallel`, but it's not recommended - it may lead to subtle bugs, so just mark your functions with `async` even if there's nothing async happening. You will also notice that if you're using a typescript swigfile and you have type checking, it will complain about any functions not matching these types (you'll get an error like `Argument of type '() => void' is not assignable to parameter of type 'TaskOrNamedTask'`):
+You can technically pass non-async functions to `series` and `parallel`, but it's not recommended as it may lead to subtle bugs. To avoid issues, mark your functions with `async` even if there's nothing async happening. You will also notice that if you're using a typescript swigfile and you have type checking, it will complain about any functions not matching these types (you'll get an error like `Argument of type '() => void' is not assignable to parameter of type 'TaskOrNamedTask'`):
 
 ```Typescript
 export type Task = () => Promise<any>
@@ -40,17 +40,17 @@ async function doStuff() {
 
 export const yourTask = series(
   doStuff,
-  async () => { console.log('This is a console message from an anonymous task') }
+  () => { console.log('This is a console message from an anonymous task') }
 )
 ```
 
 ```
-[6:00:21 PM] Starting 🚀 doStuff
+[11:27:19.432] Starting 🚀 doStuff
 log message from doStuff
-[6:00:21 PM] Finished ✅ doStuff after 9 ms
-[6:00:21 PM] Starting 🚀 anonymous
+[11:27:19.432] Finished ✅ doStuff after 0 ms
+[11:27:19.433] Starting 🚀 anonymous
 This is a console message from an anonymous task
-[6:00:21 PM] Finished ✅ anonymous after 1 ms
+[11:27:19.433] Finished ✅ anonymous after 0 ms
 ```
 
 This is really handy if you have a library of helper methods that you want to easily be able to pass in as one-liners while using params from your script, all without re-defining new wrapper functions or creating factory functions. For example:
@@ -67,19 +67,19 @@ async function runIntegrationTests() { /* ... */ }
 // Export your task to be run by swig
 export const build = series(
   parallel(
-    async () => syncEnvFiles('.env', [clientDir, serverDir, dockerDir]),
-    async () => emptyDirectory(clientBuildDir),
-    async () => emptyDirectory(serverBuildDir)
+    () => await syncEnvFiles('.env', [clientDir, serverDir, dockerDir]),
+    () => await emptyDirectory(clientBuildDir),
+    () => await emptyDirectory(serverBuildDir)
   ),
-  async () => ensureDockerUp(dockerProjectName),
+  () => await ensureDockerUp(dockerProjectName),
   prepBuild,
   parallel(
     buildClient,
     buildServer
   ),
   parallel(
-    async () => myLib.copyDirectory(clientBuildDir, clientReleaseDir),
-    async () => myLib.copyDirectory(serverBuildDir, serverReleaseDir)
+    () => await myLib.copyDirectory(clientBuildDir, clientReleaseDir),
+    () => await myLib.copyDirectory(serverBuildDir, serverReleaseDir)
   ),
   runIntegrationTests
 )
@@ -91,8 +91,8 @@ And if you don't want the output to log your methods as "`anonymous`" as shown f
 export const build = series(
   prepBuild,
   parallel(buildClient, buildServer),
-  ['copyClientBuild', async () => copyDirectory(clientBuildDir, clientReleaseDir)],
-  ['copyServerBuild', async () => copyDirectory(serverBuildDir, serverReleaseDir)]
+  ['copyClientBuild', () => await copyDirectory(clientBuildDir, clientReleaseDir)],
+  ['copyServerBuild', () => await copyDirectory(serverBuildDir, serverReleaseDir)]
 )
 ```
 Example output with named anonymous tasks:

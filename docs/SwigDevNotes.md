@@ -4,7 +4,7 @@ This doc is for misc dev notes about how to setup and use project, issues and go
 
 ## tsx instead of ts-node
 
-If you're using a typescript swigfile you can use [tsx](https://github.com/esbuild-kit/tsx) instead of ts-node. It's unclear how stable this is so I'm not advertising this on the main readme yet. So far though... it does seem to work and seems quite fast (shorter startup delay than ts-node). To use this just install `tsx` as a dev dependency in your project with `npm i -D tsx`.
+If you're using a typescript swigfile you can use [tsx](https://github.com/esbuild-kit/tsx) instead of ts-node. It's unclear how stable this is, but so far it seems to work well and is quite fast (shorter startup delay than ts-node). To use this just install `tsx` as a dev dependency in your project with `npm i -D tsx`.
 
 ## Why Swig Instead of Gulp
 
@@ -39,6 +39,7 @@ In addition to providing flexibility, the startup script also accidentally fixed
 Setup:
 
 - In project root: `npm link`. This acts like installing it globally, which gives you the executable (`swig`) and allows other project to run `npm link swig-cli` to symlink to live files.
+- In project root, start tsc in watch mode: `npm run watch`
 - In example dir:
     - `npm link swig-cli`. To see what's currently linked, you can run `npm ls --link=true`
 - Now you can run commands in the example project dir to test using the global executable (e.g. `swig` instead of `npx swig`). This works because of the link command in the root of the project.
@@ -49,6 +50,11 @@ Clean up:
 - In project root:
     - `npm unlink`
     - (optional depending on what you're doing) `npm run updateExamplesAndTest` (builds, packs and updates references in all example projects to packed version)
+
+Some gotchas when using npm link:
+
+- Can't automate linking all projects - issues with volta and spawned processes
+- Version number mismatch causes weird issues, especially when the version is below 0.1.0. Semver does not consider anything but exact match to be "semver-compliant" in this case, which seems to be required for linking. To avoid this in example projects remove the dependency with `npm rm swig-cli` and re-add it with whatever version is listed in the root package.json, then re-add with `npm i -D swig-cli` and re-link with `npm link swig-cli`.
 
 ## Tsc Watch Gotcha
 
@@ -70,7 +76,7 @@ I'm using Volta for managing node/npm on my machine - you can ignore this if you
 
 If you install a new version of `swig-cli` globally with `volta install swig-cli@latest`, it will correctly get the new version and install it, but if you run `swig` with this new version in a directory of a project that has an older version of `swig-cli` installed (so it's swigfile can import `series`/`parallel`), it will use the older version in the project-local node_modules. The volta folks advertise this as intended and the better way to handle global tools, which kinda makes sense I suppose. But kind of pain in this scenario.
 
-If this ends up being a real problem, I might have to split the executable and the `series`/`parallel` exports to separate packages, or find some other similar solution to keep them more separate. Although, this isn't a problem with just `swig-cli` - this is problem across the board with globally installed npm packages (conflicts between global and project local versions).
+If this ends up being a real problem, I might have to split the executable and the `series`/`parallel` exports to separate packages, or find some other similar solution to keep them more separate. Note that this isn't a problem with just `swig-cli` - this is problem across the board with globally installed npm packages (conflicts between global and project local versions).
 
 ## What's with all the Async Wrappers?
 
@@ -86,6 +92,10 @@ But if series wasn't a wrapper that returns a promise (same thing as returning a
 
 There might be other (and maybe better?) ways to do this, but javascript is actually really comfortable to pass around functions and promises as params, so it makes it feel relatively natural if you've done any async programming in javascript.
 
+## Protection from Non-Typescript Silliness
+
+Normally if you're writing typescript functions to be consumed by other typescript code, you can rely on type constraints on method signatures. But if you're writing typescript functions that are transpiled and accessed by any flavor of javascript, we need to protect ourselves more. I've added some checks to verify that params passed to series and parallel are actually `Task` or `NamedTask`. There may be additional spots in the code that need similar treatment.
+
 ## TODO
 
 - Setup unit testing (integration testing really) and add tests. See personal notes for list of needed tests I've kept track of so far.
@@ -95,7 +105,6 @@ There might be other (and maybe better?) ways to do this, but javascript is actu
     - Override ts-node paths
     - Set alternate swigfile location
     - Suppress warnings from startup checks (such as for dual typescript/non-typescript swigfile where consumer is doing their own transpilation)
-- Look into using tsx for typescript execution instead of ts-node (or in addition to as another option)
 
 ## TODO - address direct node_modules access issue
 

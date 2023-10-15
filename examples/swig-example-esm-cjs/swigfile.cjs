@@ -26,3 +26,9 @@ exports.mixed = series(task1, parallel(task2, task3), task4, task5)
 exports.single = task1
 exports.withAnon = series(task1, async () => { console.log('This is a console message from an anonymous task') })
 exports.withNamedAnon = series(task1, ['helloWorld', async () => { console.log('This is a console message from a named anonymous task called helloWorld') }])
+
+class MyClass {
+  constructor() {}
+}
+
+exports.MyClass = MyClass
