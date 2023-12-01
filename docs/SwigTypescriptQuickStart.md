@@ -9,47 +9,47 @@ Many project types and javascript flavors will work, but typescript with tsx is 
 - `npm init -y`
 - Update package.json so it has `"type": "module"`
 - Create a tsconfig.json with something like this (the important settings are `target`, `module` and `moduleResolution`):
-  ```
-    {
-      "compilerOptions": {
-        "target": "ESNext",
-        "module": "NodeNext",
-        "moduleResolution": "NodeNext",
-        "allowSyntheticDefaultImports": true,
-        "esModuleInterop": true,
-        "forceConsistentCasingInFileNames": true,
-        "strict": true,
-        "skipLibCheck": true,
-        "types": [
-          "node"
-        ],
-        "noEmit": true,
-        "baseUrl": ".",
-        "rootDir": "."
-      },
-      "include": [
-        "swigfile.ts"
+  ```json
+  {
+    "compilerOptions": {
+      "target": "ESNext",
+      "module": "NodeNext",
+      "moduleResolution": "NodeNext",
+      "allowSyntheticDefaultImports": true,
+      "esModuleInterop": true,
+      "forceConsistentCasingInFileNames": true,
+      "strict": true,
+      "skipLibCheck": true,
+      "types": [
+        "node"
       ],
-      "exclude": [
-        "node_modules"
-      ]
-    }
+      "noEmit": true,
+      "baseUrl": ".",
+      "rootDir": "."
+    },
+    "include": [
+      "swigfile.ts"
+    ],
+    "exclude": [
+      "node_modules"
+    ]
+  }
   ```
 - `npm i -D typescript tsx @types/node@18 swig-cli`
 - Create a file `swigfile.ts` with this content:
-```typescript
-import { series } from 'swig-cli'
+  ```typescript
+  import { series } from 'swig-cli'
 
-export const helloWorld = series(hello, world)
+  export const helloWorld = series(hello, world)
 
-async function hello() {
-  console.log('hello')
-}
+  async function hello() {
+    console.log('hello')
+  }
 
-async function world() {
-  console.log('world')
-}
-```
+  async function world() {
+    console.log('world')
+  }
+  ```
 - Verify it's working with:
   - List available tasks: `swig helloWorld`
   - Run your `helloWorld` task: `swig helloWorld`
