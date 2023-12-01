@@ -12,6 +12,7 @@ async function task3() {
   console.log('This is a console message from task3')
 }
 
+
 async function task4() {
   console.log('This is a console message from task4')
 }

@@ -58,13 +58,38 @@ export default class SwigStartupWrapper {
     }
 
     if (isTypescript && !this.hasTsx && !fs.existsSync(tsNodeBin)) {
-      this.exitWithError(`typescript detected but a dev dependency is missing.\nChoose and install either ts-node or tsx using 'npm i -D ts-node' or 'npm i -D tsx' (note that tsx esm functionality is experimental).`)
+      this.exitWithError(`typescript detected but a dev dependency is missing.\nChoose and install either tsx or ts-node using 'npm i -D tsx' or 'npm i -D ts-node'.`)
     }
+
+    const nodeVersion = parseVersion(process.version)
+    trace(`NodeJS version: ${nodeVersion?.raw}`)
 
     const command = 'node'
     let spawnArgs = [swigScript, ...preservedArgs]
     if (isTypescript && this.hasTsx) {
-      spawnArgs = ['--no-warnings', '--loader', 'tsx', ...spawnArgs]
+      const tsxVersion = getTsxVersion()
+      let loaderFlag = '--import'
+      // NodeJS < 18.19 requires the old "--loader" flag
+      if (nodeVersion && isNodeLessThan18Dot19(nodeVersion)) {
+        loaderFlag = '--loader'
+      }
+      if (loaderFlag === '--import') {
+        if (!tsxVersion || tsxVersion.major < 4) {
+          this.logWarning(`You may need to upgrade your tsx version to at least 4.x for typescript functionality to work with your version of NodeJS.`)
+        }
+        if (this.packageJsonType === 'commonjs') {
+          this.logWarning(`Using tsx with a CommonJS project is not fully supported - try ts-node instead, or re-configure your project to use ESM`)
+        }
+      }
+
+      spawnArgs = ['--no-warnings', loaderFlag, 'tsx', ...spawnArgs]
+    } else if (isTypescript && this.packageJsonType === 'esm') {
+      // ts-node is super broken for loaders and esm (and has been for a long time...) - this is the best we can do for now for the new node 18.19 issues
+      if (nodeVersion && isNodeLessThan18Dot19(nodeVersion)) {
+        spawnArgs = [tsNodeBin, '-T', swigScript, ...preservedArgs]
+      } else {
+        spawnArgs = ['--no-warnings', '--experimental-loader', 'ts-node/esm', swigScript, ...preservedArgs]
+      }
     } else if (isTypescript) {
       spawnArgs = [tsNodeBin, '-T', swigScript, ...preservedArgs]
     }
@@ -179,7 +204,7 @@ export default class SwigStartupWrapper {
   }
 
   private logWarning(str: string) {
-    log(`\n${yellow('[swig-cli] Warning:')} ${str}`)
+    log(`${yellow('[swig-cli] Warning:')} ${str}`)
   }
 
   private exitWithError(message: string) {
@@ -195,7 +220,7 @@ export default class SwigStartupWrapper {
       ['.js', 'module', 'ESM', ''],
       ['.js', 'commonjs', 'CommonJS', ''],
       ['.ts', 'module', 'ESM', 'can be affected by tsconfig.json settings'],
-      ['.ts', 'commonjs', 'CommonJS and/or ESM', 'can be affected by tsconfig.json settings']
+      ['.ts', 'commonjs', 'CommonJS and/or ESM', 'can be affected by tsconfig.json settings - tsx is not supported in this case (use ts-node)']
     ]
     log('\nAvailable configurations:\n')
     this.logTable(optionsData)
@@ -266,6 +291,51 @@ export default class SwigStartupWrapper {
       })
     })
   }
+}
+
+interface SimpleVersion {
+  raw: string
+  major: number
+  minor: number
+  patch: number
+}
+
+function parseVersion(rawVersionString: string): SimpleVersion | undefined {
+  if (!rawVersionString) {
+    throw new Error(`rawVersionString is required`)
+  }
+  try {
+    const parts = rawVersionString.replace(/[^0-9.]/g, '').split('.')
+    return {
+      raw: rawVersionString,
+      major: parts.length > 0 ? parseInt(parts[0], 10) : 0,
+      minor: parts.length > 1 ? parseInt(parts[1], 10) : 0,
+      patch: parts.length > 2 ? parseInt(parts[2], 10) : 0
+    }
+  } catch (err) {
+    trace(`unable to determine NodeJS version`, err)
+    return undefined
+  }
+}
+
+function getTsxVersion(): SimpleVersion | undefined {
+  try {
+    const packageJsonPath = './node_modules/tsx/package.json'
+    if (!fs.existsSync(packageJsonPath)) {
+      return undefined
+    }
+    const packageJsonContents = fs.readFileSync(packageJsonPath, { encoding: 'utf-8' })
+    const packageJson = JSON.parse(packageJsonContents)
+    const versionString = packageJson.version
+    return parseVersion(versionString)
+  } catch (err) {
+    trace(`error getting tsx version`, err)
+    return undefined
+  }
+}
+
+function isNodeLessThan18Dot19(nodeVersion: SimpleVersion): boolean {
+  return nodeVersion.major < 18 || (nodeVersion.major === 18 && nodeVersion.minor < 19)
 }
 
 interface SpawnResult {

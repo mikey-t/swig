@@ -260,7 +260,11 @@ export default class Swig {
   }
 
   private isFunction(task: unknown): boolean {
-    return typeof task === 'function' && !(task.prototype && task.prototype.constructor === task)
+    if (typeof task !== 'function') {
+      return false
+    }
+    const isClass = Object.getOwnPropertyDescriptor(task, 'prototype')?.writable === false
+    return !isClass
   }
 
   private showTaskList(tasks: TasksMap, mainStartTime: number, filter?: string) {

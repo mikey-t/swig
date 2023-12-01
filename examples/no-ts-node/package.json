@@ -10,6 +10,6 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "swig-cli": "^0.0.11"
+    "swig-cli": "file:../.."
   }
 }

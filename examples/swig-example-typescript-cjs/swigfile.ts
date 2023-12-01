@@ -1,3 +1,5 @@
+// Note that mixed esm/cjs syntax only works if using ts-node - tsx will either throw
+// errors when loading the swigfile, or will only pick up the esm exported functions.
 import { parallel, series } from 'swig-cli'
 
 async function task1() {

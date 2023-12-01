@@ -2,10 +2,6 @@
 
 This doc is for misc dev notes about how to setup and use project, issues and gotchas, decisions made, future plans, etc.
 
-## tsx instead of ts-node
-
-If you're using a typescript swigfile you can use [tsx](https://github.com/esbuild-kit/tsx) instead of ts-node. It's unclear how stable this is, but so far it seems to work well and is quite fast (shorter startup delay than ts-node). To use this just install `tsx` as a dev dependency in your project with `npm i -D tsx`.
-
 ## Why Swig Instead of Gulp
 
 Some contributing factors that led me to create swig:
@@ -95,6 +91,20 @@ There might be other (and maybe better?) ways to do this, but javascript is actu
 ## Protection from Non-Typescript Silliness
 
 Normally if you're writing typescript functions to be consumed by other typescript code, you can rely on type constraints on method signatures. But if you're writing typescript functions that are transpiled and accessed by any flavor of javascript, we need to protect ourselves more. I've added some checks to verify that params passed to series and parallel are actually `Task` or `NamedTask`. There may be additional spots in the code that need similar treatment.
+
+## Node Breaking Change to Loaders
+
+The NodeJS `--loader` CLI flag for got yanked out from under us in a minor release (... oof). I had to add branching logic to use `--import` instead if the NodeJS version executing is >= 18.19. I'm also checking if the tsx version is less than 4 since lower versions don't recognize the `--import` flag.
+
+I also had to change the ts-node spawn args so that node less than 18.19 uses the old way and greater than that uses `--experimental-loader`, which is just a temporary thing since they'll probably remove that at some point. Hopefully by then they'll have figured out what to do about esm support... In the meantime, node greater than or equal to 18.19 also needs to have the tsconfig.json setting for type check skipping since we can't pass the `-T` flag anymore:
+
+```json
+"ts-node": {
+  "transpileOnly": true
+}
+```
+
+This issue also makes it so I can't support mixed esm/cjs syntax in a typescript file, but that probably wasn't a reasonable thing to try and support anyway.
 
 ## TODO
 

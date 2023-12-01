@@ -133,6 +133,16 @@ For ts-node, note that I'm using the `-T` option under the hood to speed up exec
 
 If you don't want to install ts-node or want to do your own transpilation, you can have 2 swigfiles in your directory and it'll pick the first one it finds, starting with the non-typescript versions. So if you have `swigfile.ts` file and maybe you have it automatically being transpiled to `swigfile.js`, then swig will pick up and use the `swigfile.js` version instead of using ts-node. Don't forget to setup live watching of your swigfile if you're actively making changes and re-running it (such as with `tsc --watch` or whatever tool you're using).You wouldn't want to end up scratching your head because something isn't doing what you think it should, only because it doesn't have your latest changes.
 
+UPDATE: for NodeJS versions greater than or equal to 18.19, you will need to add this to your tsconfig.json in order to get the `transpileOnly` option:
+
+```json
+"ts-node": {
+  "transpileOnly": true
+}
+```
+
+UPDATE: `tsx` will not currently work correctly for all functionality in a CommonJS project. Either switch to `ts-node` or change the project to ESM.
+
 ## Recommended Usage
 
 My recommendation is to install `swig-cli` as as global npm package (`npm i -g swig-cli`) because it will run much faster (no initial delay from npm/npx - see below), and you can type less. Also, if you use this on many projects like I do, you don't have to remember to add npm aliases to each project.

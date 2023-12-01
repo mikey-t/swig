@@ -1,6 +1,6 @@
 {
   "name": "swig-cli",
-  "version": "0.0.15",
+  "version": "0.0.16",
   "description": "Swig is a simple CLI tool for automating dev workflows via compositions of series and parallel tasks.",
   "repository": {
     "type": "git",
@@ -25,17 +25,17 @@
     "swig": "dist/esm/SwigStartupWrapper.js"
   },
   "scripts": {
-    "npmInstallAll": "npm install && node --no-warnings --loader tsx tasks.ts  npmInstallAll",
-    "build": "node --no-warnings --loader tsx tasks.ts cleanDist && npm run build:cjs && npm run build:esm && node --no-warnings --loader tsx tasks.ts insertVersionNumbers",
+    "npmInstallAll": "npm install && node --no-warnings --import tsx tasks.ts  npmInstallAll",
+    "build": "node --no-warnings --import tsx tasks.ts cleanDist && npm run build:cjs && npm run build:esm && node --no-warnings --import tsx tasks.ts insertVersionNumbers",
     "watch": "tsc --watch",
     "watch:cjs": "tsc --watch --p tsconfig.cjs.json",
-    "build:cjs": "tsc --p tsconfig.cjs.json && node --no-warnings --loader tsx tasks.ts updateCjsOutput",
+    "build:cjs": "tsc --p tsconfig.cjs.json && node --no-warnings --import tsx tasks.ts updateCjsOutput",
     "build:esm": "tsc --p tsconfig.json",
-    "cleanDist": "node --no-warnings --loader tsx tasks.ts cleanDist",
-    "pack": "node --no-warnings --loader tsx tasks.ts cleanPackedDir && npm pack --pack-destination packed",
-    "updateExamples": "npm run build && npm run pack && node --no-warnings --loader tsx tasks.ts updateExampleDependencies",
-    "updateExamplesAndSmokeTest": "npm run updateExamples && node --no-warnings --loader tsx tasks.ts smokeTest",
-    "smokeTest": "node --no-warnings --loader tsx tasks.ts smokeTest"
+    "cleanDist": "node --no-warnings --import tsx tasks.ts cleanDist",
+    "pack": "node --no-warnings --import tsx tasks.ts cleanPackedDir && npm pack --pack-destination packed",
+    "updateExamples": "npm run build && npm run pack && node --no-warnings --import tsx tasks.ts updateExampleDependencies",
+    "updateExamplesAndSmokeTest": "npm run updateExamples && node --no-warnings --import tsx tasks.ts smokeTest",
+    "smokeTest": "node --no-warnings --import tsx tasks.ts smokeTest"
   },
   "files": [
     "package.json",
@@ -61,14 +61,14 @@
   "author": "Mike Thompson",
   "license": "MIT",
   "volta": {
-    "node": "18.17.1"
+    "node": "18.19.0"
   },
   "devDependencies": {
-    "@types/node": "^18.17.17",
-    "@typescript-eslint/eslint-plugin": "^6.5.0",
-    "@typescript-eslint/parser": "^6.5.0",
-    "eslint": "^8.48.0",
-    "tsx": "^3.12.10",
-    "typescript": "^5.2.2"
+    "@types/node": "^18.18.14",
+    "@typescript-eslint/eslint-plugin": "^6.13.1",
+    "@typescript-eslint/parser": "^6.13.1",
+    "eslint": "^8.54.0",
+    "tsx": "^4.6.1",
+    "typescript": "^5.3.2"
   }
 }

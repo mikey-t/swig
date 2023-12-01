@@ -9,7 +9,10 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "swig-cli": "file:../../packed/swig-cli-0.0.15.tgz",
-    "tsx": "^3.12.10"
+    "swig-cli": "file:../../packed/swig-cli-0.0.16.tgz",
+    "tsx": "^4.6.1"
+  },
+  "volta": {
+    "node": "18.19.0"
   }
 }

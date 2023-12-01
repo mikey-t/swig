@@ -8,11 +8,11 @@
   "author": "Mike Thompson",
   "license": "MIT",
   "volta": {
-    "node": "18.17.1"
+    "node": "18.19.0"
   },
   "devDependencies": {
-    "swig-cli": "file:../../packed/swig-cli-0.0.15.tgz",
-    "tsx": "^3.12.10",
-    "typescript": "^5.2.2"
+    "swig-cli": "file:../../packed/swig-cli-0.0.16.tgz",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.3.2"
   }
 }
