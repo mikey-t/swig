@@ -7,6 +7,7 @@ Many project types and javascript flavors will work, but typescript with tsx is 
 - Install swig-cli globally: `npm i -g swig-cli`
 - Create a new directory and navigate to it
 - `npm init -y`
+- (optional) `volta pin node@18`
 - Update package.json so it has `"type": "module"`
 - Create a tsconfig.json with something like this (the important settings are `target`, `module` and `moduleResolution`):
   ```json
