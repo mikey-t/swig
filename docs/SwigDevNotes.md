@@ -106,6 +106,25 @@ I also had to change the ts-node spawn args so that node less than 18.19 uses th
 
 This issue also makes it so I can't support mixed esm/cjs syntax in a typescript file, but that probably wasn't a reasonable thing to try and support anyway.
 
+## Pnpm Notes
+
+I've started using [pnpm](https://pnpm.io/installation). It seems to work ok with volta so far, but keep an eye on this (there are a lot of complaints in the volta github issues).
+
+Install steps:
+- Add system environment variable: VOLTA_FEATURE_PNPM=1
+- Run `volta install pnpm`
+
+Some advantages of using pnpm:
+
+- Saves disk space (re-uses existing versions of npm packages)
+- Way faster to install or update if the versions of packages involved are already on the machine
+
+Pnpm store location: `%localappdata%\pnpm\store\v3`
+
+The advertisement is that "sym links are used to save space". However, it's a little more involved than that (at least on Windows). There are "regular" symbolic links pointing each package dir in node_modules to a directory with the same name in node_modules/.pnpm, but the files there ... aren't actually there (sort of). They are "hard links" and there's no indicator at all for this in any built-in windows UI, so you'd have to use something like fsutil to actually see that. But essentially the hard link enables many "files" to point to the same actual space on disk, and the space on disk isn't actually deleted until all the "pointers" (files) that are hard linked are deleted.
+
+I originally thought that my shortcuts to access files directly in node_modules would break with pnpm, but pnpm's strategy to mimic the original npm node_modules allows my shortcuts to work normally.
+
 ## TODO
 
 - Setup unit testing (integration testing really) and add tests. See personal notes for list of needed tests I've kept track of so far.

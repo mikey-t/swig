@@ -2,15 +2,19 @@
 
 Swig is a simple CLI tool for automating dev workflows via compositions of series and parallel tasks.
 
+## Pre-requisites
+
+Node.js >= 18 (version 20 is recommended)
+
 ## Why Swig Instead of Gulp?
 
 Why recreate the `series`, `parallel` and task runner functionality that Gulp already has? Gulp is great, but I wanted to be able to customize how it works, strip out all the complexity and add the ability to use a variety of javascript/typescript flavors with little or no extra setup required.
 
 ## Typescript Quick Start
 
-Swig does not require typescript, but it is the recommended approach. For instructions on quickly setting up a new project that uses swig with typescript, see [Swig Typescript Quick Start](./docs/SwigTypescriptQuickStart.md).
+Swig does not require typescript, but it is the recommended approach. For instructions on quickly setting up a new project that uses swig with typescript, see [Swig Typescript Quick Start](./docs/SwigTypescriptQuickStart.md) (or simply run `npx swig-cli-init@latest` in your target directory).
 
-For general getting started, see instructions below.
+For general getting started steps, continue below.
 
 ## Getting Started
 
@@ -18,7 +22,7 @@ For general getting started, see instructions below.
   ```bash
   npm i -g swig-cli@latest
   ```
-- Install `swig-cli` package as a dev dependency so you can import `series` and `parallel`:
+- Install `swig-cli` package as a dev dependency so you can import `series` and `parallel` in your swigfile:
   ```bash
   npm i -D swig-cli
   ```
@@ -101,7 +105,7 @@ See [dotnet-react-sandbox](https://github.com/mikey-t/dotnet-react-sandbox) and 
 
 ## NodeJS Version Support
 
-NodeJS 18 is currently the only fully-tested version. However, NodeJS 16 and 20 LTS versions appear to also work. Lower versions might work for non-typescript projects, but are un-tested and not supported.
+NodeJS 18 and 20 are currently the only fully-tested versions. However, NodeJS 16 LTS version appears to also work. Lower versions might work for non-typescript projects, but are un-tested and not supported.
 
 ## Additional Documentation
 

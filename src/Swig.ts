@@ -287,6 +287,7 @@ export default class Swig {
       log(`  ${commandDescriptor.names.join(', ')}${gray(` - ${commandDescriptor.description}`)}`)
       log(`    ${gray(commandDescriptor.example)}`)
     }
+    log(`Initialize or update a swig project: npx swig-cli-init@latest`)
     return this.okExit()
   }
 
