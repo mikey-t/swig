@@ -1,8 +1,20 @@
-import { SpawnOptions, spawn } from 'node:child_process'
-import * as fs from 'node:fs'
-import * as fsp from 'node:fs/promises'
+// Swig inception notes (using swig to orchestrate swig project dev tasks):
+// - When developing swig, uninstall global version of swig-cli to avoid possible conflicts or ambiguity: volta uninstall swig-cli
+// - Call swig with ".\swig.ps1" instead of "npx swig" in order to skip the npx delay
+// - After done, re-install global version of swig-cli: volta install swig-cli@latest
+
+import { emptyDirectory, getPowershellHackArgs, spawnAsync, spawnAsyncLongRunning, SpawnResult } from '@mikeyt23/node-cli-utils'
+import { runParallel } from '@mikeyt23/node-cli-utils/parallel'
+import { log } from 'node:console'
+import fs from 'node:fs'
+import fsp from 'node:fs/promises'
+import { parallel, series } from 'swig-cli'
+import path from 'node:path'
 
 const traceEnabled = true
+
+const tscPath = './node_modules/typescript/lib/tsc.js'
+const eslintPath = './node_modules/eslint/bin/eslint.js'
 
 const TS_CJS = 'swig-example-typescript-cjs'
 const TS_ESM = 'swig-example-typescript-esm'
@@ -21,103 +33,80 @@ const primaryCodeFilenameCjs = 'Swig.cjs'
 const cjsOutputDir = './dist/cjs'
 const esmOutputDir = './dist/esm'
 
-let task: string
-
-async function main() {
-  task = process.argv[2]
-
-  if (!task) {
-    log('Please provide a task name')
-    process.exit(1)
-  }
-
-  log(`- starting task: ${task}`)
-
-  switch (task) {
-    case 'npmInstallAll':
-      await runInExamples('npm', ['install'], allExamples)
-      break
-    case 'cleanPackedDir':
-      await cleanDir('./packed')
-      break
-    case 'updateCjsOutput':
-      await updateCjsOutput()
-      break
-    case 'insertVersionNumbers':
-      await insertVersionNumbers()
-      break
-    case 'updateExampleDependencies':
-      await updateExampleDependencies(allExamples)
-      break
-    case 'updateEsmExampleDependency':
-      updateExampleDependencies([ESM])
-      break
-    case 'updateCjsExampleDependency':
-      updateExampleDependencies([CJS])
-      break
-    case 'updateTsExampleDependency':
-      updateExampleDependencies([TS_CJS])
-      break
-    case 'cleanDist':
-      await cleanDir('./dist')
-      break
-    case 'smokeTest':
-      await runInExamples('npm', ['run', 'transpileSwigfile'], [TS_TRANSPILED], traceEnabled)
-      await runInExamples('npx', ['swig', 'list'], allExamples, traceEnabled)
-      break
-    default:
-      log(`- task not found: ${task}`)
-      process.exit(1)
-  }
+export async function npmInstallExamples() {
+  await runInExamples('pnpm', ['install'], allExamples)
 }
 
-interface SpawnResult {
-  code: number
-  stdout: string
-  stderr: string
-  cwd?: string
+export async function cleanDist() {
+  await emptyDirectory('./dist')
 }
 
-async function spawnAsync(command: string, args: string[], options: SpawnOptions, liveOutput = false): Promise<SpawnResult> {
-  return new Promise((resolve, reject) => {
-    const result: SpawnResult = {
-      stdout: '',
-      stderr: '',
-      code: 99,
-      cwd: options.cwd?.toString()
-    }
+export async function buildEsm() {
+  await spawnAsync('node', [tscPath, '--p', 'tsconfig.esm.json'])
+}
 
-    const proc = spawn(command, args, options)
+export const buildCjs = series(doBuildCjs, updateCjsOutput)
 
-    proc.stdout?.on('data', (data) => {
-      result.stdout += data
-      if (liveOutput) {
-        log(data.toString())
-      }
-    })
+export const build = series(cleanDist, parallel(buildEsm, buildCjs), insertVersionNumbers)
 
-    proc.stderr?.on('data', (data) => {
-      result.stderr += data
-      if (liveOutput) {
-        console.error(data.toString())
-      }
-    })
+export async function watchEsm() {
+  await spawnAsyncLongRunning('node', [tscPath, '--p', 'tsconfig.esm.json', '--watch'])
+}
 
-    proc.on('error', (error) => {
-      trace(`Error for cwd: ${options.cwd}`)
-      trace(error)
-      reject(`Spawned process encountered an error: ${error}`)
-    })
+export async function watchCjs() {
+  await spawnAsyncLongRunning('node', [tscPath, '--p', 'tsconfig.cjs.json', '--watch'])
+}
 
-    proc.on('close', (code) => {
-      if (code === null) {
-        reject(`Spawned process returned a null result code: ${command}`)
-      } else {
-        result.code = code
-        resolve(result)
-      }
-    })
-  })
+export const pack = series(cleanPackedDir, doPack)
+
+export const updateExamples = series(build, pack, updateAllExampleDependencies)
+
+export const updateExamplesAndSmokeTest = series(updateExamples, smokeTest)
+
+export async function smokeTest() {
+  await runInExamples('npm', ['run', 'transpileSwigfile'], [TS_TRANSPILED], traceEnabled)
+  await runInExamples('npx', ['swig', 'list'], allExamples, traceEnabled)
+}
+
+export async function cleanExamples() {
+  const pathTuples: [string, string, string][] = []
+  for (const example of allExamples) {
+    pathTuples.push([
+      path.resolve('examples', example, 'node_modules'),
+      path.resolve('examples', example, 'package-lock.json'),
+      path.resolve('examples', example, 'pnpm-lock.yaml')])
+  }
+  await runParallel(pathTuples, async (pathTuple) => {
+    await spawnAsync('pwsh', getPowershellHackArgs(`remove-item -r -Force '${pathTuple[0]}'`))
+    await spawnAsync('pwsh', getPowershellHackArgs(`remove-item -r -Force '${pathTuple[1]}'`))
+  }, () => true)
+}
+
+export async function lint() {
+  await spawnAsync('node', [eslintPath, '--ext', '.ts', './src', './swigfile.ts'])
+}
+
+export const publish = series(
+  lint,
+  build,
+  updateExamplesAndSmokeTest,
+  ['npmPublish', () => spawnAsync('npm', ['publish', '--registry=https://registry.npmjs.org/'])]
+)
+
+async function doBuildCjs() {
+  await spawnAsync('node', [tscPath, '--p', 'tsconfig.cjs.json'])
+}
+
+async function cleanPackedDir() {
+  await emptyDirectory('./packed')
+}
+
+async function doPack() {
+  await spawnAsync('npm', ['pack', '--pack-destination', 'packed'])
+}
+
+async function updateAllExampleDependencies() {
+  await updateExampleDependencies(allExamples)
 }
 
 async function runInExamples(command: string, args: string[], examples: string[], printOutput = false) {
@@ -168,13 +157,6 @@ async function runInExamples(command: string, args: string[], examples: string[]
   }
 }
 
-async function cleanDir(dir: string) {
-  if (fs.existsSync(dir)) {
-    await fsp.rm(dir, { recursive: true })
-  }
-  await fsp.mkdir(dir)
-}
-
 async function updateExampleDependencies(examplesToUpdate: string[]) {
   log('- updating example projects with dependency on packed version of swig-cli')
   const packedDir = './packed'
@@ -188,7 +170,7 @@ async function updateExampleDependencies(examplesToUpdate: string[]) {
   const packedFilename = files[0]
   const relativePackedPath = '../../packed/' + packedFilename
 
-  await runInExamples('npm', ['i', '-D', relativePackedPath], examplesToUpdate)
+  await runInExamples('pnpm', ['i', '-D', relativePackedPath], examplesToUpdate)
 }
 
 async function updateCjsOutput() {
@@ -256,17 +238,3 @@ function exit(exitCode: number, messageOrError: unknown) {
   }
   process.exit(exitCode)
 }
-
-function log(message?: unknown, ...optionalParams: unknown[]) {
-  console.log(message, ...optionalParams)
-}
-
-function trace(message?: unknown, ...optionalParams: unknown[]) {
-  if (traceEnabled) { console.log(message, ...optionalParams) }
-}
-
-main().then(() => {
-  exit(0, `- finished task ${task}`)
-}).catch(err => {
-  exit(1, err)
-})

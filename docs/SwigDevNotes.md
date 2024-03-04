@@ -30,31 +30,19 @@ There are some obvious downsides to the specific implementation I've got going (
 
 In addition to providing flexibility, the startup script also accidentally fixed an issue where running with an npm alias or npx was causing dash parameters to be hijacked by npm/npx. Which could really add a lot of confusion and headache for when consumers start defining tasks that evaluate process.argv for additional options, and those options are broken because of npm. Instead, the new process getting spawned is calling node directly, so npm/npx has no chance to screw things up.
 
-## Rapid `Swig.ts` Dev Loop
+## Rapid Dev Loop Using Example Project
 
 Setup:
 
-- In project root: `npm link`. This acts like installing it globally, which gives you the executable (`swig`) and allows other project to run `npm link swig-cli` to symlink to live files.
-- In project root, start tsc in watch mode: `npm run watch`
-- In example dir:
-    - `npm link swig-cli`. To see what's currently linked, you can run `npm ls --link=true`
-- Now you can run commands in the example project dir to test using the global executable (e.g. `swig` instead of `npx swig`). This works because of the link command in the root of the project.
+- In root of project, run (and leave running): `.\swig.ps1 watchEsm`
+- In example project in another terminal, remove swig-cli and re-add it using the relative location:
+    - `pnpm rm swig-cli`
+    - `pnpm i -D ../../`
+
 
 Clean up:
-- In example dir:
-    - `npm unlink swig-cli`
-- In project root:
-    - `npm unlink`
-    - (optional depending on what you're doing) `npm run updateExamplesAndTest` (builds, packs and updates references in all example projects to packed version)
-
-Some gotchas when using npm link:
-
-- Can't automate linking all projects - issues with volta and spawned processes
-- Version number mismatch causes weird issues, especially when the version is below 0.1.0. Semver does not consider anything but exact match to be "semver-compliant" in this case, which seems to be required for linking. To avoid this in example projects remove the dependency with `npm rm swig-cli` and re-add it with whatever version is listed in the root package.json, then re-add with `npm i -D swig-cli` and re-link with `npm link swig-cli`.
-
-## Tsc Watch Gotcha
-
-Running `npm run watch` (just `tsc --watch` currently) will use the default tsconfig.json, which is the ESM version. To also watch and update the CJS version in `dist`, run `npm watch:cjs` in another terminal.
+- Stop the process running the `watchEsm` task with ctrl + C
+- Undo all example project swig-cli references by running: `.\swig.ps1 updateExamples`
 
 ## Why the CJS version?
 
@@ -74,19 +62,17 @@ If you install a new version of `swig-cli` globally with `volta install swig-cli
 
 If this ends up being a real problem, I might have to split the executable and the `series`/`parallel` exports to separate packages, or find some other similar solution to keep them more separate. Note that this isn't a problem with just `swig-cli` - this is problem across the board with globally installed npm packages (conflicts between global and project local versions).
 
-## What's with all the Async Wrappers?
+## Explanation of Async Wrappers
 
-(you should read that in Jerry Seinfeld's voice)
-
-The trick to this whole operation is that you want to be able to import a javascript file and define pipelines using this syntax:
+The trick to this whole operation is that pipeline definitions like this:
 
 ```javascript
 export const someTask = series(task1, parallel(task2, task3), task4)
 ```
 
-But if series wasn't a wrapper that returns a promise (same thing as returning a nested async function), then the function would get executed immediately on file import and the result would get assigned to a variable `someTask`, which isn't what we want. We want to read the file and then look at the exports and only execute the one function that was requested.
+need to pass around functions, but not execute them. And due to a lack of any easy and reliable ways to determine if a function is async (without executing it and seeing if it returned a promise), we just always assume it could be async and use `await` when executing any user-defined functions that were passed in (using `await` on a non-async function simply executes it).
 
-There might be other (and maybe better?) ways to do this, but javascript is actually really comfortable to pass around functions and promises as params, so it makes it feel relatively natural if you've done any async programming in javascript.
+So, the `series` and `parallel` methods essentially take the functions passed as params and wrap them in async wrappers to be executed later.
 
 ## Protection from Non-Typescript Silliness
 
@@ -94,7 +80,7 @@ Normally if you're writing typescript functions to be consumed by other typescri
 
 ## Node Breaking Change to Loaders
 
-The NodeJS `--loader` CLI flag for got yanked out from under us in a minor release (... oof). I had to add branching logic to use `--import` instead if the NodeJS version executing is >= 18.19. I'm also checking if the tsx version is less than 4 since lower versions don't recognize the `--import` flag.
+The NodeJS `--loader` CLI flag got yanked out from under us in a minor release (... oof). I had to add branching logic to use `--import` instead if the NodeJS version executing is >= 18.19. I'm also checking if the tsx version is less than 4 since lower versions don't recognize the `--import` flag.
 
 I also had to change the ts-node spawn args so that node less than 18.19 uses the old way and greater than that uses `--experimental-loader`, which is just a temporary thing since they'll probably remove that at some point. Hopefully by then they'll have figured out what to do about esm support... In the meantime, node greater than or equal to 18.19 also needs to have the tsconfig.json setting for type check skipping since we can't pass the `-T` flag anymore:
 
@@ -124,6 +110,14 @@ Pnpm store location: `%localappdata%\pnpm\store\v3`
 The advertisement is that "sym links are used to save space". However, it's a little more involved than that (at least on Windows). There are "regular" symbolic links pointing each package dir in node_modules to a directory with the same name in node_modules/.pnpm, but the files there ... aren't actually there (sort of). They are "hard links" and there's no indicator at all for this in any built-in windows UI, so you'd have to use something like fsutil to actually see that. But essentially the hard link enables many "files" to point to the same actual space on disk, and the space on disk isn't actually deleted until all the "pointers" (files) that are hard linked are deleted.
 
 I originally thought that my shortcuts to access files directly in node_modules would break with pnpm, but pnpm's strategy to mimic the original npm node_modules allows my shortcuts to work normally.
+
+## Swig Inception Notes
+
+Originally I didn't intend to use swig to orchestrate the swig project's own dev tasks. I thought I would possibly run into strange issues with version ambiguity or other conflicts. However, now that swig is more stable, I've migrated from using npm scripts and the loose `tasks` file to using a live version of swig. To ensure there are as few issues as possible, this is how I plan on using this scenario:
+
+- When developing swig, uninstall global version of swig-cli to avoid possible conflicts or ambiguity: volta uninstall swig-cli
+- Call swig with ".\swig.ps1" instead of "npx swig" in order to skip the npx delay
+- After done, re-install global version of swig-cli: volta install swig-cli@latest
 
 ## TODO
 
