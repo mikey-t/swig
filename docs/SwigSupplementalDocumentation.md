@@ -20,10 +20,11 @@ export async function doStuff() {...}
 ```
 
 Then run it with:
-```JavaScript
-// Global swig install
+```bash
+# Global swig-cli install
 swig doStuff
-// Local swig install
+
+# OR local swig-cli install
 npx swig doStuff
 ```
 
@@ -117,23 +118,23 @@ Wow! Nice!
 
 I've setup the default behavior to be fairly simple:
 
-- If a function called by series throws an error, no further execution will occur
+- If a function called by series throws an error, no further task executions later in the series will occur
 - If a function called by parallel throws an error:
   - All sibling functions within the same parallel call will be allowed to continue
   - All errors for all functions in the same parallel call that threw errors will have the error they threw logged to the console at the end of execution (in addition to whatever logging you have setup in the functions themselves)
   - Execution will stop after all methods in the same parallel call return
 
-If you have more complicated error behavior requirements, there's lots of ways to do this with vanilla javascript, such as setting and checking global state vars in your swigfile. And if for some reason you've concocted some really complex error scenarios that requires finer grained control and you want it wired directly up to series/parallel methods... well then there's always gulp.
+If you have more complicated error behavior requirements, you can simply write up something custom, like setting and checking global state vars in your swigfile (although this is probably an unlikely scenario for most use cases).
 
 ## Typescript Notes
 
-For a typescript swigfile.ts to work, you need to install [ts-node](https://typestrong.org/ts-node/docs/) as a local dependency. Or alternatively you can use [tsx](https://github.com/esbuild-kit/tsx) (note that ESM functionality is currently advertised as being experimental, but it seems to work).
+For a typescript swigfile.ts to work, you need to install one of these Node.js typescript loaders as a dev dependency in your project: [tsx](https://github.com/esbuild-kit/tsx) OR [ts-node](https://typestrong.org/ts-node/docs/). At the time of writing, ts-node doesn't work well with ESM and tsx is significantly faster, so tsx is the current recommended loader.
 
 For ts-node, note that I'm using the `-T` option under the hood to speed up execution ([`--transpileOnly`](https://typestrong.org/ts-node/docs/options#transpileonly)). There's valid reasons not to use this, but I generally rely on the IDE along with plugins like eslint plugins to find "compile-time" errors when I'm using ts-node in a dev situation rather than slowing down the execution with these type of checks. And if you don't use a good IDE for some reason, you'll still get some of the errors - you'll just see them at a slightly different spot in the execution process. But there are plenty of scenarios where this will let you shoot yourself in the foot, so be aware if you're writing code in Notepad.exe or something. In the future I'd like to allow overriding swig's default ts-node config so this and other ts-node options can be changed.
 
-If you don't want to install ts-node or want to do your own transpilation, you can have 2 swigfiles in your directory and it'll pick the first one it finds, starting with the non-typescript versions. So if you have `swigfile.ts` file and maybe you have it automatically being transpiled to `swigfile.js`, then swig will pick up and use the `swigfile.js` version instead of using ts-node. Don't forget to setup live watching of your swigfile if you're actively making changes and re-running it (such as with `tsc --watch` or whatever tool you're using).You wouldn't want to end up scratching your head because something isn't doing what you think it should, only because it doesn't have your latest changes.
+If you don't want to install ts-node or want to do your own transpilation, you can have 2 swigfiles in your directory and it'll pick the first one it finds, starting with the non-typescript versions. So if you have `swigfile.ts` file and maybe you have it automatically being transpiled to `swigfile.js`, then swig will pick up and use the `swigfile.js` version instead of using ts-node. Don't forget to setup live watching of your swigfile if you're actively making changes and re-running it (such as with `tsc --watch` or whatever tool you're using).You wouldn't want to end up in a situation where something isn't doing what you think it should only because it doesn't have your latest changes.
 
-UPDATE: for NodeJS versions greater than or equal to 18.19, you will need to add this to your tsconfig.json in order to get the `transpileOnly` option:
+UPDATE for using ts-node: for NodeJS versions greater than or equal to 18.19, you will need to add this to your tsconfig.json in order to get the `transpileOnly` option:
 
 ```json
 "ts-node": {
@@ -141,11 +142,11 @@ UPDATE: for NodeJS versions greater than or equal to 18.19, you will need to add
 }
 ```
 
-UPDATE: `tsx` will not currently work correctly for all functionality in a CommonJS project. Either switch to `ts-node` or change the project to ESM.
+UPDATE for tsx: `tsx` will not currently work correctly for all functionality in a CommonJS project. Either switch to `ts-node` or change the project to ESM.
 
 ## Recommended Usage
 
-My recommendation is to install `swig-cli` as as global npm package (`npm i -g swig-cli`) because it will run much faster (no initial delay from npm/npx - see below), and you can type less. Also, if you use this on many projects like I do, you don't have to remember to add npm aliases to each project.
+My recommendation is to install `swig-cli` as as global npm package (`npm i -g swig-cli`) because it will run much faster (no initial delay from npm/npx - see below), and you can type less.
 
 My opinion is that running stuff through npx and npm aliases is annoying because of the initial delay on each startup. For me this delay can be anywhere between 1 second and 4-8 seconds for some reason. That's not all that long, but it feels like an eternity when running a task that should only take a few milliseconds. This is why I prefer and recommend using a global install of `swig-cli` so you can call `swig` directly without incurring the startup delay.
 
@@ -210,11 +211,12 @@ Commands:
     swig version
   filter, f - Filter and list tasks by name
     swig filter pattern
+Initialize or update a swig project: npx swig-cli-init@latest
 ```
 
-Note that these are essentially "reserved words". If you define exported tasks with these names in your swigfile, they'll never get run. The swig command will be run instead. Originally I was using dash params, but npm aliases and npx was causing them to be hijacked (for example, npx swig -v would output the npx version...). I've since changed my startup strategy and that may no longer be an issue, but I've left the commands as is for now.
+Note that these are essentially "reserved words". If you define exported tasks with these names in your swigfile, they'll never take precedence over the built-in swig params.
 
-Also note the `filter` command, which is handy if you have long list of commands and want to show only those with a particular substring (case insensitive). For example, list all tasks that have `db` in their names:
+Also note the `filter` command (also the shortened version `f`), which is handy if you have long list of commands and want to show only those with a particular substring (case insensitive). For example, list all tasks that have `db` in their names:
 
 ```bash
 swig f db

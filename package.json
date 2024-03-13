@@ -51,7 +51,7 @@
     "node": "20.11.1"
   },
   "devDependencies": {
-    "@mikeyt23/node-cli-utils": "^2.0.33",
+    "@mikeyt23/node-cli-utils": "^2.0.35",
     "@types/node": "^20.11.24",
     "@typescript-eslint/eslint-plugin": "^7.1.0",
     "@typescript-eslint/parser": "^7.1.0",

@@ -2,13 +2,17 @@
 
 Swig is a simple CLI tool for automating dev workflows via compositions of series and parallel tasks.
 
+Write simple javascript or typescript functions and execute them in a shell in your project's root directory.
+
+Fast. Simple. Convenient.
+
 ## Pre-requisites
 
-Node.js >= 18 (version 20 is recommended)
+Node.js >= 16 (version 20 is recommended)
 
 ## Why Swig Instead of Gulp?
 
-Why recreate the `series`, `parallel` and task runner functionality that Gulp already has? Gulp is great, but I wanted to be able to customize how it works, strip out all the complexity and add the ability to use a variety of javascript/typescript flavors with little or no extra setup required.
+Why recreate the "series", "parallel" and "task runner" functionality that Gulp already has? Gulp is great, but I wanted to be able to customize how it works, strip out all the noise and add the ability to use a variety of javascript/typescript flavors with little or no extra setup required.
 
 ## Typescript Quick Start
 
@@ -20,7 +24,11 @@ For general getting started steps, continue below.
 
 - (Optional) Install `swig-cli` globally for convenient shortened commands and much faster task execution (no initial delay from npm/npx):
   ```bash
+  # With npm:
   npm i -g swig-cli@latest
+
+  # OR with volta:
+  volta install swig-cli
   ```
 - Install `swig-cli` package as a dev dependency so you can import `series` and `parallel` in your swigfile:
   ```bash
@@ -31,17 +39,19 @@ For general getting started steps, continue below.
 - Add some tasks to your swigfile. Any exported function will do, but the magic happens when you start composing functions together with `series` and `parallel` - see examples below.
 - Add some tasks to your swigfile (see [Series, Parallel and Composability Example](#series-parallel-and-composability-example))
 - List detected tasks from your swigfile (exported functions):
-  ```JavaScript
-  // Global install
+  ```bash
+  # Global swig-cli install
   swig
-  // Local install
+
+  # OR local swig-cli install
   npx swig
   ```
 - Run a task:
-  ```JavaScript
-  // Global install
+  ```bash
+  # Global swig-cli install
   swig yourTask
-  // Local install
+
+  # OR local swig-cli install
   npx swig yourTask
   ```
 
@@ -62,12 +72,12 @@ If there are multiple swigfiles in your project directory, swig will use the fir
 | `.js`    | commonjs            | CommonJS            |       |
 | `.cjs`   | any                 | CommonJS            |       |
 | `.mjs`   | any                 | ESM                 |       |
-| `.ts`    | commonjs            | ESM and/or CommonJS | Must have valid `tsconfig.json` options. Must use `ts-node` and not `tsx`. |
-| `.ts`    | module              | ESM                 | Must have valid `tsconfig.json` options. May use either `ts-node` or `tsx`. |
+| `.ts`    | commonjs            | ESM and/or CommonJS | Must have valid `tsconfig.json` options. Must use `ts-node` and NOT `tsx`. |
+| `.ts`    | module              | ESM                 | Must have valid `tsconfig.json` options. May use either `tsx` or `ts-node`. |
 
 If using typescript:
 
-- You must install either `tsx` or `ts-node` as a dev dependency in your project. Note that `tsx` ESM functionality is advertised as being experimental, but it seems to work well, and also seems to have fewer issues than `ts-node`. You can install one of these by running `npm i -D tsx` or `npm i -D ts-node`.
+- You must install either `tsx` or `ts-node` as a dev dependency in your project (Node typescript loaders). Note that `tsx` ESM functionality is advertised as being experimental, but it seems to work well, and also seems to have fewer issues than `ts-node`, and is much faster. You can install one of these by running `npm i -D tsx` or `npm i -D ts-node`.
 - In a typescript project where the package.json is set to CommonJS, you will need to use `ts-node` and NOT `tsx`
 - Your `tsconfig.json` needs to have settings that match your `package.json` type. For example, if you have your `package.json` type field set to `module`, then your `tsconfig.json` needs to have a `module` setting of "ES2020" or "ESNext" (something that supports ESM). See [Swig Typescript Quick Start](./docs/SwigTypescriptQuickStart.md) for an example `tsconfig.json` file.
 - If using `ts-node`, speed up execution time by configuring it to skip type checking (this is only required for NodeJS version 18.19 and above):
@@ -76,6 +86,9 @@ If using typescript:
     "transpileOnly": true
   }
   ```
+- Make sure your `tsconfig.json` has your `swigfile.ts` in it's `include` section in order to get IDE support
+- If using eslint, ensure that your `swigfile.ts` is included in files that it checks
+- If you're using swig to manage a typescript project and have conflicting tsconfig.json settings, consider using a separate file for your build, like `tsconfig.build.json` and build with something like `tsc --p tsconfig.build.json` (or alternatively, you could use another directory for swig other than your project's root directory)
 
 ## Series, Parallel and Composability Example
 
@@ -93,9 +106,10 @@ export const build = series(buildPrep, parallel(buildClient, buildServer), postB
 
 And then we can run it with :
 ```javascript
-// Global install
+// Global swig-cli install
 swig build
-// Local install
+
+// OR local swig-cli install
 npx swig build
 ```
 
@@ -103,9 +117,24 @@ npx swig build
 
 See [dotnet-react-sandbox](https://github.com/mikey-t/dotnet-react-sandbox) and it's use of [swig-cli-modules](https://github.com/mikey-t/swig-cli-modules) to encapsulate tasks for projects that use it as a template.
 
-## NodeJS Version Support
+## Compatibility
 
-NodeJS 18 and 20 are currently the only fully-tested versions. However, NodeJS 16 LTS version appears to also work. Lower versions might work for non-typescript projects, but are un-tested and not supported.
+### NodeJS Version Support
+
+Node.js versions >= 16 are supported.
+
+Tested Node.js versions:
+- 16.20.2
+- 18.18.2
+- 18.19.1
+- 20.11.1
+
+### Optional dependencies
+
+Known working versions of optional dependencies for typescript variant projects:
+- typescript: 5.3.2
+- [tsx](https://github.com/privatenumber/tsx): 4.6.1
+- [ts-node](https://github.com/TypeStrong/ts-node): 10.9.2
 
 ## Additional Documentation
 

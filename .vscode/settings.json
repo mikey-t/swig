@@ -13,9 +13,11 @@
   "typescript.format.semicolons": "remove",
   "typescript.tsserver.experimental.enableProjectDiagnostics": true,
   "cSpell.words": [
+    "dynicamlly",
     "howfat",
     "swigfile",
-    "swigfiles"
+    "swigfiles",
+    "TSNODE"
   ],
   "typescript.preferences.importModuleSpecifier": "relative",
   "javascript.preferences.importModuleSpecifier": "relative"

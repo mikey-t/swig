@@ -1,0 +1,13 @@
+{
+  "name": "swig-example-typescript-esm",
+  "version": "1.0.0",
+  "description": "Swig-cli example. ESM project, ESM swigfile.ts, executed with ts-node dev dependency.",
+  "type": "module",
+  "author": "Mike Thompson",
+  "license": "MIT",
+  "devDependencies": {
+    "swig-cli": "link:..\\..",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.2"
+  }
+}

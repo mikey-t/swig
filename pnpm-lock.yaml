@@ -6,8 +6,8 @@ settings:
 
 devDependencies:
   '@mikeyt23/node-cli-utils':
-    specifier: ^2.0.33
-    version: 2.0.33
+    specifier: ^2.0.35
+    version: 2.0.35
   '@types/node':
     specifier: ^20.11.24
     version: 20.11.24
@@ -301,8 +301,8 @@ packages:
     resolution: {integrity: sha512-6EwiSjwWYP7pTckG6I5eyFANjPhmPjUX9JRLUSfNPC7FX7zK9gyZAfUEaECL6ALTpGX5AjnBq3C9XmVWPitNpw==}
     dev: true
 
-  /@mikeyt23/node-cli-utils@2.0.33:
-    resolution: {integrity: sha512-F4jkbvOd5JsOJkU4S7MCzE0nQzX4Pftpp55ksKv9adWmoxYgw5cN1OHAM9n6vvtyoJomHwmb+444l1RU1jgTpQ==}
+  /@mikeyt23/node-cli-utils@2.0.35:
+    resolution: {integrity: sha512-5mmKq7fxeX1kAX3C57LiPKZ+hQDEv44ZGpFEFLivPu2Pz1EuK4qJM7m76HSzJFVePtTds0JX857CEh5Z+ndAxA==}
     engines: {node: '>=16.0.0'}
     dependencies:
       axios: 1.6.7

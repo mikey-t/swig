@@ -1,0 +1,11 @@
+{
+  "name": "swig-example-cjs-mjs",
+  "version": "1.0.0",
+  "description": "Swig-cli example. CommonJS project, ESM swigfile.mjs.",
+  "type": "commonjs",
+  "author": "Mike Thompson",
+  "license": "MIT",
+  "devDependencies": {
+    "swig-cli": "link:..\\.."
+  }
+}

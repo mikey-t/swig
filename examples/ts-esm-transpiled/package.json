@@ -1,0 +1,18 @@
+{
+  "name": "swig-example-typescript-transpiled",
+  "version": "1.0.0",
+  "description": "Swig-cli example. ESM project, ESM swigfile.ts with an extra build step to transpile swigfile.ts to swigfile.js.",
+  "type": "module",
+  "scripts": {
+    "transpileSwigfile": "swc swigfile.ts -o swigfile.js",
+    "transpileSwigfileTsc": "tsc --target ESNext --module NodeNext --moduleResolution NodeNext swigfile.ts"
+  },
+  "author": "Mike Thompson",
+  "license": "MIT",
+  "devDependencies": {
+    "@swc/cli": "^0.3.10",
+    "@swc/core": "^1.3.100",
+    "swig-cli": "link:..\\..",
+    "typescript": "^5.3.2"
+  }
+}

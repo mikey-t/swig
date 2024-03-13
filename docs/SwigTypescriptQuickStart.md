@@ -6,7 +6,7 @@ Required:
 
 - Node.js version 20
 
-Recommended, but optional:
+Optional (but recommended):
 
 - [Volta](https://docs.volta.sh/guide/getting-started)
 - [Pnpm](https://pnpm.io/installation)
@@ -31,7 +31,7 @@ Many project types and javascript flavors will work, but typescript with tsx is 
 - Create a new directory and navigate to it
 - `npm init -y`
 - (optional) `volta pin node@20`
-- Update package.json so it has `"type": "module"`
+- Update package.json so it has `"type": "module"` (can be accomplished with a CLI by running `npm pkg set type="module"`)
 - Create a tsconfig.json with something like this (the important settings are `target`, `module` and `moduleResolution`):
   ```json
   {
@@ -75,5 +75,5 @@ Many project types and javascript flavors will work, but typescript with tsx is 
   }
   ```
 - Verify it's working with:
-  - List available tasks: `swig helloWorld`
-  - Run your `helloWorld` task: `swig helloWorld`
+  - List available tasks: `swig`
+  - Run your hello world task: `swig helloWorld`

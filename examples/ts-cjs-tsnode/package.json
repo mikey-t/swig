@@ -1,0 +1,16 @@
+{
+  "name": "swig-example-typescript-cjs",
+  "version": "1.0.0",
+  "description": "Swig-cli example. CommonJS project, CommonJS swigfile.ts.",
+  "type": "commonjs",
+  "author": "Mike Thompson",
+  "license": "MIT",
+  "volta": {
+    "node": "18.19.0"
+  },
+  "devDependencies": {
+    "swig-cli": "link:..\\..",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.2"
+  }
+}

@@ -1,10 +1,7 @@
 {
   "name": "no-swig-cli-installed",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {},
-  "keywords": [],
-  "author": "",
-  "license": "ISC"
+  "description": "Swig-cli example. If project has a package.json but is missing swig-cli as a dependency, running swig will print a simple error message",
+  "author": "Mike Thompson",
+  "license": "MIT"
 }

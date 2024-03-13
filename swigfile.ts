@@ -1,40 +1,63 @@
-// Swig inception notes (using swig to orchestrate swig project dev tasks):
-// - When developing swig, uninstall global version of swig-cli to avoid possible conflicts or ambiguity: volta uninstall swig-cli
-// - Call swig with ".\swig.ps1" instead of "npx swig" in order to skip the npx delay
-// - After done, re-install global version of swig-cli: volta install swig-cli@latest
+// // Swig inception notes (using swig to orchestrate swig project dev tasks):
+// // - When developing swig, uninstall global version of swig-cli to avoid possible conflicts or ambiguity: volta uninstall swig-cli
+// // - Call swig with ".\swig.ps1" instead of "npx swig" in order to skip the npx delay (this will use the node_modules version)
+// // - After done with swig development, re-install global version of swig-cli: volta install swig-cli@latest
 
-import { emptyDirectory, getPowershellHackArgs, spawnAsync, spawnAsyncLongRunning, SpawnResult } from '@mikeyt23/node-cli-utils'
+import { Emoji, SpawnResult, copyDirectoryContents, emptyDirectory, ensureDirectory, spawnAsync, spawnAsyncLongRunning } from '@mikeyt23/node-cli-utils'
 import { runParallel } from '@mikeyt23/node-cli-utils/parallel'
 import { log } from 'node:console'
 import fs from 'node:fs'
 import fsp from 'node:fs/promises'
-import { parallel, series } from 'swig-cli'
 import path from 'node:path'
+import { parallel, series } from './node_modules/swig-cli/dist/esm/index.js'
 
 const traceEnabled = true
+const nodeTestVersionsImmutable = ['16.20.2', '18.18.2', '18.19.1', '20.11.1'] as const
+const testTempDir = 'C:\\temp\\swig-test'
+const testTempPackedDir = path.join(testTempDir, 'swig-cli-packed')
+const usePackedForVersionTests = true
+
+const nodeTestVersions: string[] = [...nodeTestVersionsImmutable]
+type NodeVersion = typeof nodeTestVersionsImmutable[number]
 
 const tscPath = './node_modules/typescript/lib/tsc.js'
 const eslintPath = './node_modules/eslint/bin/eslint.js'
+const tsxArgs = ['--no-warnings', '--import', 'tsx']
+const transpiledExampleProject = 'ts-esm-transpiled'
 
-const TS_CJS = 'swig-example-typescript-cjs'
-const TS_ESM = 'swig-example-typescript-esm'
-const TS_TSX = 'swig-example-typescript-tsx'
-const TS_TRANSPILED = 'swig-example-typescript-transpiled'
+const exampleProjects: string[] = [
+  'cjs-cjs',
+  'cjs-js',
+  'cjs-mjs',
+  'esm-cjs',
+  'esm-js',
+  'esm-mjs',
+  'ts-cjs-tsnode',
+  transpiledExampleProject,
+  'ts-esm-tsnode',
+  'ts-esm-tsx',
+  'no-package',
+  'no-swig-cli-installed',
+  'no-swigfile',
+  'no-ts-node'
+]
 
-const CJS = 'swig-example-cjs'
-const CJS_MJS = 'swig-example-cjs-mjs'
-const ESM = 'swig-example-esm'
-const ESM_CJS = 'swig-example-esm-cjs'
-
-const allExamples = [TS_CJS, TS_ESM, TS_TSX, TS_TRANSPILED, CJS, CJS_MJS, ESM, ESM_CJS]
+const exampleProjectsToSkipNpmInstall = [
+  'no-package',
+  'no-swig-cli-installed',
+  'no-ts-node'
+]
 
 const primaryCodeFilenameEsm = 'Swig.js'
 const primaryCodeFilenameCjs = 'Swig.cjs'
 const cjsOutputDir = './dist/cjs'
 const esmOutputDir = './dist/esm'
 
+let swigCopiedToTestTemp = false // This will be set in ensureSwigCopiedToVersionTestDir
+let tempDirPackedSwigCliPath: string | undefined // This will be set in ensureSwigPackedCopiedToVersionTestDir
+
 export async function npmInstallExamples() {
-  await runInExamples('pnpm', ['install'], allExamples)
+  await runInExamples('pnpm', ['install'], exampleProjects)
 }
 
 export async function cleanDist() {
@@ -61,37 +84,142 @@ export const pack = series(cleanPackedDir, doPack)
 
 export const updateExamples = series(build, pack, updateAllExampleDependencies)
 
-export const updateExamplesAndSmokeTest = series(updateExamples, smokeTest)
-
-export async function smokeTest() {
-  await runInExamples('npm', ['run', 'transpileSwigfile'], [TS_TRANSPILED], traceEnabled)
-  await runInExamples('npx', ['swig', 'list'], allExamples, traceEnabled)
-}
-
 export async function cleanExamples() {
   const pathTuples: [string, string, string][] = []
-  for (const example of allExamples) {
+  for (const example of exampleProjects) {
     pathTuples.push([
       path.resolve('examples', example, 'node_modules'),
       path.resolve('examples', example, 'package-lock.json'),
       path.resolve('examples', example, 'pnpm-lock.yaml')])
   }
   await runParallel(pathTuples, async (pathTuple) => {
-    await spawnAsync('pwsh', getPowershellHackArgs(`remove-item -r -Force '${pathTuple[0]}'`))
-    await spawnAsync('pwsh', getPowershellHackArgs(`remove-item -r -Force '${pathTuple[1]}'`))
+    if (fs.existsSync(pathTuple[0])) {
+      await fsp.rm(pathTuple[0], { force: true, recursive: true })
+    }
+    if (fs.existsSync(pathTuple[1])) {
+      await fsp.rm(pathTuple[1])
+    }
+    if (fs.existsSync(pathTuple[2])) {
+      await fsp.rm(pathTuple[2])
+    }
   }, () => true)
 }
 
 export async function lint() {
-  await spawnAsync('node', [eslintPath, '--ext', '.ts', './src', './swigfile.ts'])
+  await spawnAsync('node', [eslintPath, '--ext', '.ts', './src', './test', './swigfile.ts'])
 }
 
 export const publish = series(
   lint,
   build,
-  updateExamplesAndSmokeTest,
+  updateExamples,
+  test,
   ['npmPublish', () => spawnAsync('npm', ['publish', '--registry=https://registry.npmjs.org/'])]
 )
+
+export const publishWithoutTesting = series(
+  lint,
+  build,
+  ['npmPublish', () => spawnAsync('npm', ['publish', '--registry=https://registry.npmjs.org/'])]
+)
+
+export async function test(nodeVersion?: NodeVersion) {
+  log(`${Emoji.Info} Running tests`)
+  const isOnly = argPassed('o')
+  if (isOnly) {
+    log(`${Emoji.Info} Only running tests marked with "only" ("o" param was detected)`)
+  }
+
+  const result = await spawnAsync(
+    'node',
+    [
+      ...tsxArgs,
+      ...(isOnly ? ['--test-only'] : []),
+      '--test',
+      'test/Swig.test.ts'
+    ],
+    { env: { ...process.env, NODE_VERSION_TO_TEST: nodeVersion } }
+  )
+
+  if (result.code !== 0) {
+    log(`${Emoji.Warning} If there have been any changes to examples, be sure to run the updateExamples swig task first`)
+    throw new Error('Tests failed')
+  }
+}
+
+// Pass "skip" CLI param to skip temp test dir prep (for faster dev loop when testing specific node version issues)
+export const testNodeVersion = series(cleanTestNodePackedDir, doTestNodeVersion)
+
+export const testAllNodeVersions = series(
+  cleanTestNodePackedDir,
+  () => doTestNodeVersion('16.20.2'),
+  () => doTestNodeVersion('18.19.1'),
+  () => doTestNodeVersion('20.11.1')
+)
+
+async function cleanTestNodePackedDir() {
+  if (!testTempPackedDir.startsWith('C:\\temp\\')) {
+    throw new Error(`unexpected testTempPackedDir: ${testTempPackedDir}`)
+  }
+
+  if (fs.existsSync(testTempPackedDir)) {
+    await fsp.rm(testTempPackedDir, { force: true, recursive: true })
+  }
+}
+
+async function doTestNodeVersion(nodeVersionOverride?: NodeVersion) {
+  if (usePackedForVersionTests) {
+    await ensureSwigPackedCopiedToVersionTestDir()
+  } else {
+    await ensureSwigCopiedToVersionTestDir()
+  }
+
+  const nodeVersion = nodeVersionOverride || getNodeVersionFromArg()
+  log(`- testing node version: ${nodeVersion}`)
+  await prepareNodeVersionTest(nodeVersion)
+  await test(nodeVersion)
+}
+
+async function prepareNodeVersionTest(nodeVersion: NodeVersion) {
+  const versionTestDir = path.join(testTempDir, `node-v${nodeVersion}`)
+  log(`- setting test directory for examples at ${versionTestDir}`)
+  if (argPassed('skip')) {
+    log(`${Emoji.Info} Skipping example setup ("skip" param was detected)`)
+    return
+  }
+
+  // Just to prevent accidental deletions - manually update if the var testTempDir changes
+  if (!versionTestDir.startsWith('C:\\temp\\')) {
+    throw new Error(`unexpected versionTestDir: ${versionTestDir}`)
+  }
+
+  if (fs.existsSync(versionTestDir)) {
+    await fsp.rm(versionTestDir, { force: true, recursive: true })
+  }
+
+  for (const exampleProject of exampleProjects) {
+    const sourceDir = path.join('./examples', exampleProject)
+    const destDir = path.join(versionTestDir, exampleProject)
+    await copyDirectoryContents(sourceDir, destDir, { exclusions: ['node_modules', 'pnpm-lock.yaml', 'package-lock.json'] })
+  }
+
+  const swigCliReferencePath = tempDirPackedSwigCliPath ?? '../../swig-cli'
+
+  await runParallel<string, void>(exampleProjects, async exampleProject => {
+    if (exampleProjectsToSkipNpmInstall.includes(exampleProject)) {
+      return
+    }
+    const testExamplePath = path.join(versionTestDir, exampleProject)
+    await spawnAsync('volta', ['pin', `node@${nodeVersion}`], { cwd: testExamplePath })
+    await spawnAsync('pnpm', ['rm', 'swig-cli'], { cwd: testExamplePath })
+    await spawnAsync('pnpm', ['i', '-D', swigCliReferencePath], { cwd: testExamplePath })
+    await spawnAsync('pnpm', ['install'], { cwd: testExamplePath })
+  }, () => true)
+}
+
+function argPassed(argName: string) {
+  return process.argv.slice(3).includes(argName)
+}
 
 async function doBuildCjs() {
   await spawnAsync('node', [tscPath, '--p', 'tsconfig.cjs.json'])
@@ -106,7 +234,7 @@ async function doPack() {
 }
 
 async function updateAllExampleDependencies() {
-  await updateExampleDependencies(allExamples)
+  await updateExampleDependencies([...exampleProjects])
 }
 
 async function runInExamples(command: string, args: string[], examples: string[], printOutput = false) {
@@ -157,8 +285,23 @@ async function runInExamples(command: string, args: string[], examples: string[]
   }
 }
 
-async function updateExampleDependencies(examplesToUpdate: string[]) {
-  log('- updating example projects with dependency on packed version of swig-cli')
+async function updateExampleDependencies(examplesToUpdate: string[], usePacked = false) {
+  let swigReferencePath = '../..'
+
+  if (usePacked) {
+    log('- updating example projects with dependency on packed version of swig-cli')
+    const packedTarballName = await getPackedTarballName()
+    swigReferencePath = '../../packed/' + packedTarballName
+  } else {
+    log('- updating example projects with parent directory link for swig-cli dependency')
+  }
+
+  await runInExamples('pnpm', ['i', '-D', swigReferencePath], examplesToUpdate.filter(x => !exampleProjectsToSkipNpmInstall.includes(x)))
+
+  await runInExamples('npm', ['run', 'transpileSwigfile'], [transpiledExampleProject], traceEnabled)
+}
+
+async function getPackedTarballName() {
   const packedDir = './packed'
   const files = await fsp.readdir(packedDir)
   if (!files) {
@@ -167,10 +310,10 @@ async function updateExampleDependencies(examplesToUpdate: string[]) {
   if (files.length !== 1) {
     exit(1, '- Error: there should only be one file in packed dir')
   }
-  const packedFilename = files[0]
-  const relativePackedPath = '../../packed/' + packedFilename
-
-  await runInExamples('pnpm', ['i', '-D', relativePackedPath], examplesToUpdate)
+  if (!files[0].startsWith('swig-cli-') || !files[0].endsWith('.tgz')) {
+    exit(1, `- Error: unexpected packed tarball name: ${files[0]}`)
+  }
+  return files[0]
 }
 
 async function updateCjsOutput() {
@@ -230,6 +373,18 @@ async function insertVersionNumber(file: string, version: string) {
   await fsp.writeFile(file, fileContents, { encoding: 'utf8' })
 }
 
+function isNodeVersion(str: unknown): str is NodeVersion {
+  return !!str && typeof str === 'string' && nodeTestVersions.includes(str)
+}
+
+function getNodeVersionFromArg(): NodeVersion {
+  const nodeVersionFromArg = process.argv[3]
+  if (!isNodeVersion(nodeVersionFromArg)) {
+    throw new Error(`Missing required param for node version (${nodeTestVersions.join(', ')})`)
+  }
+  return nodeVersionFromArg
+}
+
 function exit(exitCode: number, messageOrError: unknown) {
   if (exitCode > 0) {
     console.error(messageOrError)
@@ -237,4 +392,38 @@ function exit(exitCode: number, messageOrError: unknown) {
     log(messageOrError)
   }
   process.exit(exitCode)
+}
+
+async function ensureSwigCopiedToVersionTestDir() {
+  log(`- ensuring built version of swig-cli has been copied to test directory`)
+  if (swigCopiedToTestTemp) {
+    return
+  }
+  swigCopiedToTestTemp = true
+
+  const destDir = path.join(testTempDir, 'swig-cli')
+  await ensureDirectory(destDir)
+
+  const packageJson = 'package.json'
+  const license = 'LICENSE'
+  const readme = 'readme.md'
+
+  const promises = [
+    fsp.copyFile('./package.json', path.join(destDir, packageJson)),
+    fsp.copyFile('./package.json', path.join(destDir, license)),
+    fsp.copyFile('./package.json', path.join(destDir, readme)),
+    copyDirectoryContents('./dist', path.join(destDir, 'dist'))
+  ]
+
+  await Promise.all(promises)
+}
+
+async function ensureSwigPackedCopiedToVersionTestDir() {
+  if (tempDirPackedSwigCliPath) {
+    return
+  }
+  const packedTarballName = await getPackedTarballName()
+  tempDirPackedSwigCliPath = path.join(testTempPackedDir, await getPackedTarballName())
+  await ensureDirectory(testTempPackedDir)
+  await fsp.copyFile(path.join('./packed/', packedTarballName), tempDirPackedSwigCliPath)
 }

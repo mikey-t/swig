@@ -1,3 +1,4 @@
+
 const { series, parallel } = require('swig-cli')
 
 async function task1() {

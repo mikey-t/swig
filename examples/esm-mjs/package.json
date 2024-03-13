@@ -1,0 +1,11 @@
+{
+  "name": "swig-example-esm-mjs",
+  "version": "1.0.0",
+  "description": "Swig-cli example. ESM project, ESM swigfile.mjs.",
+  "type": "module",
+  "author": "Mike Thompson",
+  "license": "MIT",
+  "devDependencies": {
+    "swig-cli": "link:..\\.."
+  }
+}

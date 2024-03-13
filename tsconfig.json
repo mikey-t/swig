@@ -17,14 +17,14 @@
   },
   "include": [
     "swigfile.ts",
-    "src/**/*.ts"
+    "src/**/*.ts",
+    "test/**/*.test.ts"
   ],
   "exclude": [
     "dist",
     "docs",
     "examples",
     "node_modules",
-    "packed",
-    "test"
+    "packed"
   ]
 }

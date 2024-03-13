@@ -1,13 +1,10 @@
 {
   "name": "no-swigfile",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {},
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "description": "Swig-cli example. Projects with a package.json and swig-cli as a dependency will print a simple error message if swig is run without a swigfile.",
+  "author": "Mike Thompson",
+  "license": "MIT",
   "devDependencies": {
-    "swig-cli": "file:../.."
+    "swig-cli": "link:..\\.."
   }
 }
