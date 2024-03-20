@@ -6,8 +6,8 @@ settings:
 
 devDependencies:
   swig-cli:
-    specifier: file:..\..\packed\swig-cli-0.0.18-alpha2.tgz
-    version: file:../../packed/swig-cli-0.0.18-alpha2.tgz
+    specifier: file:..\..\packed\swig-cli-1.0.1.tgz
+    version: file:../../packed/swig-cli-1.0.1.tgz
   tsx:
     specifier: ^4.7.1
     version: 4.7.1
@@ -281,9 +281,9 @@ packages:
       fsevents: 2.3.3
     dev: true
 
-  file:../../packed/swig-cli-0.0.18-alpha2.tgz:
-    resolution: {integrity: sha512-MdHgirHY7MnElxad8oB4iWjW3vjVOOnDY7VcSwxM26warDjAT+7qTEEHWqG8w2lZklzwEeqtDF0CcecJvN0ZKA==, tarball: file:../../packed/swig-cli-0.0.18-alpha2.tgz}
+  file:../../packed/swig-cli-1.0.1.tgz:
+    resolution: {integrity: sha512-00j7+eXS+IEdYM8OSXcOug11gihUe6TppQvO5wag+WiL7nDRz1hNERzPyVtdqSlYADF6nLuWTEtc3TSCzai+kA==, tarball: file:../../packed/swig-cli-1.0.1.tgz}
     name: swig-cli
-    version: 0.0.18-alpha2
+    version: 1.0.1
     hasBin: true
     dev: true
