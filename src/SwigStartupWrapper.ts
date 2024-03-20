@@ -1,12 +1,18 @@
 #!/usr/bin/env node
 
+import { spawn } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
-import Swig, { log, possibleTaskFileNames, red, trace, yellow } from './Swig.js'
-import { spawn } from 'node:child_process'
+import Swig, { possibleTaskFileNames } from './Swig.js'
+import { SpawnResult, getNodeVersion, getTsxVersion, isNodeLessThan18Dot19, log, logTable, red, trace, yellow } from './utils.js'
 
 type ProjectType = 'esm' | 'commonjs'
 type SwigfileExtension = 'mjs' | 'cjs' | 'js' | 'ts'
+
+const swigScriptEsm = './node_modules/swig-cli/dist/esm/swigCli.js'
+const swigScriptCjs = './node_modules/swig-cli/dist/cjs/swigCli.cjs'
+const tsNodeBinCjs = './node_modules/ts-node/dist/bin.js'
+const tsNodeBinEsm = './node_modules/ts-node/dist/bin-esm.js'
 
 export default class SwigStartupWrapper {
   private swigfilePath: string = ''
@@ -20,7 +26,7 @@ export default class SwigStartupWrapper {
   main(): Promise<SpawnResult> {
     trace('- SwigStartupWrapper is checking a few things...')
 
-    const hasSwigfile = this.populateSwigfile()
+    const hasSwigfile = this.populateSwigfileInfo()
     if (hasSwigfile) {
       trace(`- swigfile: ${this.swigfilePath}`)
       trace(`- swigfile extension: ${this.swigfileExtension}`)
@@ -42,10 +48,6 @@ export default class SwigStartupWrapper {
     const preservedArgs = process.argv.slice(2)
     const isTypescript = this.swigfileExtension === 'ts'
 
-    const swigScriptEsm = './node_modules/swig-cli/dist/esm/swigCli.js'
-    const swigScriptCjs = './node_modules/swig-cli/dist/cjs/swigCli.cjs'
-    const tsNodeBinCjs = './node_modules/ts-node/dist/bin.js'
-    const tsNodeBinEsm = './node_modules/ts-node/dist/bin-esm.js'
     let swigScript = swigScriptEsm
     let tsNodeBin = tsNodeBinEsm
 
@@ -61,7 +63,7 @@ export default class SwigStartupWrapper {
       this.exitWithError(`typescript detected but a dev dependency is missing.\nChoose and install either tsx or ts-node using 'npm i -D tsx' or 'npm i -D ts-node'.`)
     }
 
-    const nodeVersion = parseVersion(process.version)
+    const nodeVersion = getNodeVersion()
     trace(`NodeJS version: ${nodeVersion?.raw}`)
 
     const command = 'node'
@@ -99,7 +101,7 @@ export default class SwigStartupWrapper {
     return this.spawnSwigCliAsync(command, spawnArgs)
   }
 
-  private populateSwigfile(): boolean {
+  private populateSwigfileInfo(): boolean {
     let swigfilePath: string
     for (const filename of possibleTaskFileNames) {
       swigfilePath = `./${filename}`
@@ -219,30 +221,12 @@ export default class SwigStartupWrapper {
       ['.mjs', 'any', 'ESM', ''],
       ['.js', 'module', 'ESM', ''],
       ['.js', 'commonjs', 'CommonJS', ''],
-      ['.ts', 'module', 'ESM', 'can be affected by tsconfig.json settings'],
-      ['.ts', 'commonjs', 'CommonJS and/or ESM', 'can be affected by tsconfig.json settings - tsx is not supported in this case (use ts-node)']
+      ['.ts', 'commonjs', 'CommonJS', 'Must have valid `tsconfig.json` options. Must use `ts-node` and NOT `tsx` for CommonJS.'],
+      ['.ts', 'module', 'ESM', 'Must have valid `tsconfig.json` options. Must have either `tsx` or `ts-node` installed.']
     ]
     log('\nAvailable configurations:\n')
-    this.logTable(optionsData)
+    logTable(optionsData)
     log('')
-  }
-
-  private logTable(data: string[][]): void {
-    if (data.length === 0 || data[0].length === 0) return
-
-    const numColumns = data[0].length
-    const columnWidths: number[] = []
-    for (let i = 0; i < numColumns; i++) {
-      columnWidths[i] = Math.max(...data.map(row => row[i]?.length || 0))
-    }
-
-    const lineSeparator = ' ' + columnWidths.map(width => '-'.repeat(width)).join(' + ')
-
-    for (let i = 0; i < data.length; i++) {
-      const paddedRowArray = data[i].map((cell, colIdx) => cell.padEnd(columnWidths[colIdx], ' '))
-      log(' ' + paddedRowArray.join(' | '))
-      if (i === 0) log(lineSeparator)
-    }
   }
 
   private spawnSwigCliAsync(command: string, args: string[]): Promise<SpawnResult> {
@@ -293,60 +277,9 @@ export default class SwigStartupWrapper {
   }
 }
 
-interface SimpleVersion {
-  raw: string
-  major: number
-  minor: number
-  patch: number
-}
-
-function parseVersion(rawVersionString: string): SimpleVersion | undefined {
-  if (!rawVersionString) {
-    throw new Error(`rawVersionString is required`)
-  }
-  try {
-    const parts = rawVersionString.replace(/[^0-9.]/g, '').split('.')
-    return {
-      raw: rawVersionString,
-      major: parts.length > 0 ? parseInt(parts[0], 10) : 0,
-      minor: parts.length > 1 ? parseInt(parts[1], 10) : 0,
-      patch: parts.length > 2 ? parseInt(parts[2], 10) : 0
-    }
-  } catch (err) {
-    trace(`unable to determine NodeJS version`, err)
-    return undefined
-  }
-}
-
-function getTsxVersion(): SimpleVersion | undefined {
-  try {
-    const packageJsonPath = './node_modules/tsx/package.json'
-    if (!fs.existsSync(packageJsonPath)) {
-      return undefined
-    }
-    const packageJsonContents = fs.readFileSync(packageJsonPath, { encoding: 'utf-8' })
-    const packageJson = JSON.parse(packageJsonContents)
-    const versionString = packageJson.version
-    return parseVersion(versionString)
-  } catch (err) {
-    trace(`error getting tsx version`, err)
-    return undefined
-  }
-}
-
-function isNodeLessThan18Dot19(nodeVersion: SimpleVersion): boolean {
-  return nodeVersion.major < 18 || (nodeVersion.major === 18 && nodeVersion.minor < 19)
-}
-
-interface SpawnResult {
-  code: number
-  error?: Error
-}
-
 const firstArg = process.argv.slice(2)[0]
 if (['h', 'help', '-h', '--help', 'v', 'version', '-v', '--version'].includes(firstArg)) {
-  // If first arg is version or help, skip all checks and go straight to
-  // calling Swig since all it needs to do is print some text and exit.
+  // If first arg is version or help, skip all checks and go straight to calling Swig since all it needs to do is print some text and exit.
   trace(`- SwigStartupWrapper is skipping checks because the command is ${firstArg}`)
   new Swig().runMainAsync()
 } else {

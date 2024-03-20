@@ -151,6 +151,16 @@ Note that when tests execute, it's tsx with latest project-root Node version, bu
 
 To test a subset of the example projects, update Swig.test.ts variable `projectsToTestOverride` with the specific projects to test. Be sure to put this back before committing.
 
+## Testing Packed Version
+
+Keep in mind that pnpm will not pull in an updated version without the `--force` flag, which I'm using in the swigfile tasks that remove and re-add the swig-cli dependency in example/test projects. I could alternatively use a strategy where after a change I bump a package.json suffix like `-alpha<number>` and re-test. However, the pnpm `--force` options seems to be good enough for my use case.
+
+## Errors Deleting node_modules
+
+I started getting intermittent errors when running any swig task that needs to delete a node_modules directory. It's complaining about a file handle on `esbuild.exe`. It's unclear why this so frequently has a lingering handle that prevents deletion. I tried adding a couple sleeps around node_modules deletion in addition to setting the `maxRetries` to 5, but it still happens.
+
+The workaround for now is to just re-run whatever the task was. If it persists, I've found that the most likely culprit is vscode, so closing that seems to free up whatever the handle is. There's a TODO item below to investigate this.
+
 ## TODO
 
 - Determine if there's a better alternative to accessing node_modules directly (see section below)
@@ -163,9 +173,7 @@ To test a subset of the example projects, update Swig.test.ts variable `projects
   - Add additional tests:
     - Tests that verify various error/warning messages for syntax mismatches
     - Tests that verify exported classes are not considered runnable swig tasks (currently there's a bug causing some project/syntax combos to still do this - add some tests while fixing the bug)
-  - Speed up tests:
-    - Split each example project tests into separate files to take advantage of the test runner's parallel execution
-    - Fork the process when running all tests for all node versions (one process per node version)
+  - Speed up tests by splitting each example project's tests into separate files to take advantage of the test runner's parallel execution
 
 ## TODO - address direct node_modules access issue
 

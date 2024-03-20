@@ -6,5 +6,14 @@ settings:
 
 devDependencies:
   swig-cli:
-    specifier: link:..\..
-    version: link:../..
+    specifier: file:..\..\packed\swig-cli-0.0.18-alpha2.tgz
+    version: file:../../packed/swig-cli-0.0.18-alpha2.tgz
+
+packages:
+
+  file:../../packed/swig-cli-0.0.18-alpha2.tgz:
+    resolution: {integrity: sha512-MdHgirHY7MnElxad8oB4iWjW3vjVOOnDY7VcSwxM26warDjAT+7qTEEHWqG8w2lZklzwEeqtDF0CcecJvN0ZKA==, tarball: file:../../packed/swig-cli-0.0.18-alpha2.tgz}
+    name: swig-cli
+    version: 0.0.18-alpha2
+    hasBin: true
+    dev: true

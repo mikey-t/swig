@@ -1,6 +1,6 @@
 {
   "name": "swig-cli",
-  "version": "0.0.17",
+  "version": "0.0.18",
   "description": "Swig is a simple CLI tool for automating dev workflows via compositions of series and parallel tasks.",
   "repository": {
     "type": "git",
@@ -22,11 +22,12 @@
   "main": "./dist/esm/index.js",
   "types": "dist/esm/index.d.ts",
   "bin": {
-    "swig": "dist/esm/SwigStartupWrapper.js"
+    "swig": "dist/SwigStartupWrapper.js"
   },
   "files": [
     "package.json",
     "dist/",
+    "src/",
     "readme.md",
     "LICENSE"
   ],
@@ -52,11 +53,18 @@
   },
   "devDependencies": {
     "@mikeyt23/node-cli-utils": "^2.0.35",
+    "@rollup/plugin-commonjs": "^25.0.7",
+    "@rollup/plugin-node-resolve": "^15.2.3",
+    "@rollup/plugin-replace": "^5.0.5",
+    "@rollup/plugin-terser": "^0.4.4",
+    "@rollup/plugin-typescript": "^11.1.6",
     "@types/node": "^20.11.24",
     "@typescript-eslint/eslint-plugin": "^7.1.0",
     "@typescript-eslint/parser": "^7.1.0",
     "eslint": "^8.57.0",
-    "swig-cli": "^0.0.17",
+    "rollup": "^4.13.0",
+    "swig-cli": "^0.0.18",
+    "tslib": "^2.6.2",
     "tsx": "^4.7.1",
     "typescript": "^5.3.3"
   }

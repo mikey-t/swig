@@ -1,9 +1,10 @@
-// // Swig inception notes (using swig to orchestrate swig project dev tasks):
-// // - When developing swig, uninstall global version of swig-cli to avoid possible conflicts or ambiguity: volta uninstall swig-cli
-// // - Call swig with ".\swig.ps1" instead of "npx swig" in order to skip the npx delay (this will use the node_modules version)
-// // - After done with swig development, re-install global version of swig-cli: volta install swig-cli@latest
+// Swig inception notes (using swig to orchestrate swig project dev tasks):
+// - When developing swig, uninstall global version of swig-cli to avoid possible conflicts or ambiguity: volta uninstall swig-cli
+// - Call swig with ".\swig.ps1" instead of "npx swig" in order to skip the npx delay (this will use the node_modules version)
+// - After done with swig development, re-install global version of swig-cli: volta install swig-cli@latest
+// - Update referenced swig-cli version after new version is published
 
-import { Emoji, SpawnResult, copyDirectoryContents, emptyDirectory, ensureDirectory, spawnAsync, spawnAsyncLongRunning } from '@mikeyt23/node-cli-utils'
+import { Emoji, SpawnResult, copyDirectoryContents, emptyDirectory, ensureDirectory, getConfirmation, sleep, spawnAsync, spawnAsyncLongRunning, unpackTarball } from '@mikeyt23/node-cli-utils'
 import { runParallel } from '@mikeyt23/node-cli-utils/parallel'
 import { log } from 'node:console'
 import fs from 'node:fs'
@@ -15,13 +16,24 @@ const traceEnabled = true
 const nodeTestVersionsImmutable = ['16.20.2', '18.18.2', '18.19.1', '20.11.1'] as const
 const testTempDir = 'C:\\temp\\swig-test'
 const testTempPackedDir = path.join(testTempDir, 'swig-cli-packed')
+const usePackedForDefaultTests = true
 const usePackedForVersionTests = true
+const unzipToTempAfterPacking = false
+const usePnpmForceOnSwigInstall = true
+const rollupConfigEsm = 'rollup.config.esm.js'
+const rollupConfigCjs = 'rollup.config.cjs.js'
+const tsconfigEsm = 'tsconfig.esm.json'
+const tsconfigCjs = 'tsconfig.cjs.json'
+const npmRegistryArg = '--registry=https://registry.npmjs.org/'
+const deleteNodeModulesSleepMillis = 250 // Sleeps are an attempt to avoid errors deleting esbuild.exe from node_modules
+const deleteNodeModulesRetries = 5
 
 const nodeTestVersions: string[] = [...nodeTestVersionsImmutable]
 type NodeVersion = typeof nodeTestVersionsImmutable[number]
 
 const tscPath = './node_modules/typescript/lib/tsc.js'
 const eslintPath = './node_modules/eslint/bin/eslint.js'
+const rollupPath = './node_modules/rollup/dist/bin/rollup'
 const tsxArgs = ['--no-warnings', '--import', 'tsx']
 const transpiledExampleProject = 'ts-esm-transpiled'
 
@@ -48,41 +60,63 @@ const exampleProjectsToSkipNpmInstall = [
   'no-ts-node'
 ]
 
-const primaryCodeFilenameEsm = 'Swig.js'
-const primaryCodeFilenameCjs = 'Swig.cjs'
-const cjsOutputDir = './dist/cjs'
-const esmOutputDir = './dist/esm'
-
 let swigCopiedToTestTemp = false // This will be set in ensureSwigCopiedToVersionTestDir
 let tempDirPackedSwigCliPath: string | undefined // This will be set in ensureSwigPackedCopiedToVersionTestDir
-
-export async function npmInstallExamples() {
-  await runInExamples('pnpm', ['install'], exampleProjects)
-}
 
 export async function cleanDist() {
   await emptyDirectory('./dist')
 }
 
-export async function buildEsm() {
-  await spawnAsync('node', [tscPath, '--p', 'tsconfig.esm.json'])
+export async function lint() {
+  await spawnAsync('node', [eslintPath, '--ext', '.ts', './src', './test', './swigfile.ts'])
 }
 
-export const buildCjs = series(doBuildCjs, updateCjsOutput)
+export const build = series(
+  cleanDist,
+  parallel(
+    ['rollupEsm', () => doRollup(rollupConfigEsm)],
+    ['rollupCjs', () => doRollup('rollup.config.cjs.js')]
+  ),
+  parallel(
+    removeUnnecessaryDistFiles,
+    copyCjsPackageJsonToDist
+  )
+)
 
-export const build = series(cleanDist, parallel(buildEsm, buildCjs), insertVersionNumbers)
+export const buildEsm = series(
+  cleanDist,
+  ['rollupEsm', () => doRollup(rollupConfigEsm)],
+  removeUnnecessaryDistFiles
+)
+
+export const buildCjs = series(
+  cleanDist,
+  ['rollupCjs', () => doRollup(rollupConfigCjs)],
+  parallel(
+    removeUnnecessaryDistFiles,
+    copyCjsPackageJsonToDist
+  )
+)
+
+export async function tscEsm() {
+  await spawnAsync('node', [tscPath, '--p', tsconfigEsm])
+}
+
+export async function tscCjs() {
+  await spawnAsync('node', [tscPath, '--p', tsconfigCjs])
+}
 
 export async function watchEsm() {
-  await spawnAsyncLongRunning('node', [tscPath, '--p', 'tsconfig.esm.json', '--watch'])
+  await spawnAsyncLongRunning('node', [tscPath, '--p', tsconfigEsm, '--watch'])
 }
 
 export async function watchCjs() {
-  await spawnAsyncLongRunning('node', [tscPath, '--p', 'tsconfig.cjs.json', '--watch'])
+  await spawnAsyncLongRunning('node', [tscPath, '--p', tsconfigCjs, '--watch'])
 }
 
-export const pack = series(cleanPackedDir, doPack)
+export const pack = series(cleanPackedDir, doPack, conditionallyUnpackToTemp)
 
-export const updateExamples = series(build, pack, updateAllExampleDependencies)
+export const buildAndUpdateExamples = series(build, pack, updateExamples)
 
 export async function cleanExamples() {
   const pathTuples: [string, string, string][] = []
@@ -94,7 +128,9 @@ export async function cleanExamples() {
   }
   await runParallel(pathTuples, async (pathTuple) => {
     if (fs.existsSync(pathTuple[0])) {
-      await fsp.rm(pathTuple[0], { force: true, recursive: true })
+      await sleep(deleteNodeModulesSleepMillis)
+      await fsp.rm(pathTuple[0], { force: true, recursive: true, maxRetries: deleteNodeModulesRetries })
+      await sleep(deleteNodeModulesSleepMillis)
     }
     if (fs.existsSync(pathTuple[1])) {
       await fsp.rm(pathTuple[1])
@@ -105,22 +141,26 @@ export async function cleanExamples() {
   }, () => true)
 }
 
-export async function lint() {
-  await spawnAsync('node', [eslintPath, '--ext', '.ts', './src', './test', './swigfile.ts'])
-}
-
 export const publish = series(
   lint,
   build,
   updateExamples,
   test,
-  ['npmPublish', () => spawnAsync('npm', ['publish', '--registry=https://registry.npmjs.org/'])]
+  ['npmPublish', () => spawnAsync('npm', ['publish', npmRegistryArg])]
 )
 
 export const publishWithoutTesting = series(
+  [
+    'confirm',
+    async () => {
+      if (!(await getConfirmation('Are you sure you want to publish without running tests?'))) {
+        throw new Error('Aborting')
+      }
+    }
+  ],
   lint,
   build,
-  ['npmPublish', () => spawnAsync('npm', ['publish', '--registry=https://registry.npmjs.org/'])]
+  ['npmPublish', () => spawnAsync('npm', ['publish', npmRegistryArg])]
 )
 
 export async function test(nodeVersion?: NodeVersion) {
@@ -152,10 +192,31 @@ export const testNodeVersion = series(cleanTestNodePackedDir, doTestNodeVersion)
 
 export const testAllNodeVersions = series(
   cleanTestNodePackedDir,
+  parallel(
+    () => doTestNodeVersion('16.20.2'),
+    () => doTestNodeVersion('18.18.2'),
+    () => doTestNodeVersion('18.19.1'),
+    () => doTestNodeVersion('20.11.1')
+  )
+)
+
+export const testAllNodeVersionsInSeries = series(
+  cleanTestNodePackedDir,
   () => doTestNodeVersion('16.20.2'),
+  () => doTestNodeVersion('18.18.2'),
   () => doTestNodeVersion('18.19.1'),
   () => doTestNodeVersion('20.11.1')
 )
+
+export async function npmInstallExamples() {
+  await runInExamples('pnpm', ['install'], exampleProjects)
+}
+
+export async function updateExamples() {
+  await updateExampleDependencies([...exampleProjects], usePackedForDefaultTests)
+}
+
+export const buildAndPack = series(build, pack)
 
 async function cleanTestNodePackedDir() {
   if (!testTempPackedDir.startsWith('C:\\temp\\')) {
@@ -194,7 +255,9 @@ async function prepareNodeVersionTest(nodeVersion: NodeVersion) {
   }
 
   if (fs.existsSync(versionTestDir)) {
-    await fsp.rm(versionTestDir, { force: true, recursive: true })
+    await sleep(deleteNodeModulesSleepMillis)
+    await fsp.rm(versionTestDir, { force: true, recursive: true, maxRetries: deleteNodeModulesRetries })
+    await sleep(deleteNodeModulesSleepMillis)
   }
 
   for (const exampleProject of exampleProjects) {
@@ -211,18 +274,14 @@ async function prepareNodeVersionTest(nodeVersion: NodeVersion) {
     }
     const testExamplePath = path.join(versionTestDir, exampleProject)
     await spawnAsync('volta', ['pin', `node@${nodeVersion}`], { cwd: testExamplePath })
-    await spawnAsync('pnpm', ['rm', 'swig-cli'], { cwd: testExamplePath })
-    await spawnAsync('pnpm', ['i', '-D', swigCliReferencePath], { cwd: testExamplePath })
+    await spawnAsync('pnpm', ['rm', 'swig-cli'], { cwd: testExamplePath, throwOnNonZero: false })
+    await spawnAsync('pnpm', ['i', '-D', ...(usePnpmForceOnSwigInstall ? ['--force'] : []), swigCliReferencePath], { cwd: testExamplePath })
     await spawnAsync('pnpm', ['install'], { cwd: testExamplePath })
   }, () => true)
 }
 
 function argPassed(argName: string) {
   return process.argv.slice(3).includes(argName)
-}
-
-async function doBuildCjs() {
-  await spawnAsync('node', [tscPath, '--p', 'tsconfig.cjs.json'])
 }
 
 async function cleanPackedDir() {
@@ -233,31 +292,21 @@ async function doPack() {
   await spawnAsync('npm', ['pack', '--pack-destination', 'packed'])
 }
 
-async function updateAllExampleDependencies() {
-  await updateExampleDependencies([...exampleProjects])
-}
-
 async function runInExamples(command: string, args: string[], examples: string[], printOutput = false) {
+  const ignoreNonZero = args[0] === 'rm'
   const fullCommand = `${command} ${args.join(' ')}`
   log(`- running ${fullCommand} in example projects`)
   const promises: Promise<SpawnResult>[] = []
   for (const example of examples) {
     const cwd = `./examples/${example}/`
     log(`- running ${fullCommand} in example project ${example}`)
-
-    // Hack so that 'npm link swig-cli' works on windows with Volta installed
-    let additionalArgs = {}
-    if (args.length > 0 && args[0] === 'link') {
-      additionalArgs = { env: process.env, shell: true, stdio: 'inherit' }
-    }
-
-    promises.push(spawnAsync(command, args, { cwd, ...additionalArgs }))
+    promises.push(spawnAsync(command, args, { cwd, throwOnNonZero: !ignoreNonZero }))
   }
   const promiseResults = await Promise.allSettled(promises) as PromiseSettledResult<SpawnResult>[]
   const rejected = promiseResults.filter(r => r.status === 'rejected') as PromiseRejectedResult[]
   const fulfilled = promiseResults.filter(r => r.status === 'fulfilled') as PromiseFulfilledResult<SpawnResult>[]
   const results = fulfilled.map(r => r.value)
-  const nonZeroStatusResults = results.filter(r => r.code !== 0)
+  const nonZeroStatusResults = ignoreNonZero ? [] : results.filter(r => r.code !== 0)
 
   if (printOutput) {
     results.forEach(r => {
@@ -281,7 +330,7 @@ async function runInExamples(command: string, args: string[], examples: string[]
     if (nonZeroStatusResults.length > 0) {
       nonZeroStatusResults.forEach(r => console.error(r))
     }
-    exit(1, `- Error(s) running ${command} in examples`)
+    throw new Error(`- Error(s) running ${command} in examples`)
   }
 }
 
@@ -293,84 +342,31 @@ async function updateExampleDependencies(examplesToUpdate: string[], usePacked =
     const packedTarballName = await getPackedTarballName()
     swigReferencePath = '../../packed/' + packedTarballName
   } else {
-    log('- updating example projects with parent directory link for swig-cli dependency')
+    log('- updating example projects with parent directory reference for swig-cli dependency')
   }
 
-  await runInExamples('pnpm', ['i', '-D', swigReferencePath], examplesToUpdate.filter(x => !exampleProjectsToSkipNpmInstall.includes(x)))
+  await runInExamples('pnpm', ['rm', 'swig-cli'], examplesToUpdate.filter(x => !exampleProjectsToSkipNpmInstall.includes(x)))
 
-  await runInExamples('npm', ['run', 'transpileSwigfile'], [transpiledExampleProject], traceEnabled)
+  await runInExamples('pnpm', ['i', '-D', ...(usePnpmForceOnSwigInstall ? ['--force'] : []), swigReferencePath], examplesToUpdate.filter(x => !exampleProjectsToSkipNpmInstall.includes(x)))
+
+  if (examplesToUpdate.includes(transpiledExampleProject)) {
+    await runInExamples('npm', ['run', 'transpileSwigfile'], [transpiledExampleProject], traceEnabled)
+  }
 }
 
 async function getPackedTarballName() {
   const packedDir = './packed'
   const files = await fsp.readdir(packedDir)
   if (!files) {
-    exit(1, '- Error: no files found in packed dir')
+    throw new Error('- Error: no files found in packed dir')
   }
   if (files.length !== 1) {
-    exit(1, '- Error: there should only be one file in packed dir')
+    throw new Error('- Error: there should only be one file in packed dir')
   }
   if (!files[0].startsWith('swig-cli-') || !files[0].endsWith('.tgz')) {
-    exit(1, `- Error: unexpected packed tarball name: ${files[0]}`)
+    throw new Error(`- Error: unexpected packed tarball name: ${files[0]}`)
   }
   return files[0]
-}
-
-async function updateCjsOutput() {
-  const filenames = await fsp.readdir(cjsOutputDir)
-  for (const filename of filenames) {
-    if (!filename.includes('.js')) {
-      continue
-    }
-    const oldPath = `${cjsOutputDir}/${filename}`
-    const newPath = `${cjsOutputDir}/${filename.replace('.js', '.cjs')}`
-    await fsp.rename(oldPath, newPath)
-  }
-
-  const updatedFilenames = await fsp.readdir(cjsOutputDir)
-  for (const filename of updatedFilenames) {
-    await updateCjsFileContents(cjsOutputDir, filename)
-  }
-
-  const packageJson = await fsp.readFile('./package.cjs.json', { encoding: 'utf8' })
-  await fsp.writeFile(`${cjsOutputDir}/package.json`, packageJson, { encoding: 'utf8' })
-}
-
-// Do replacements (except in special file where we only do one replacement):
-// .js" -> .cjs"
-// .js' -> .cjs'
-// .js.map -> .cjs.map
-async function updateCjsFileContents(dir: string, filename: string) {
-  const filePath = `${dir}/${filename}`
-  const fileContents = await fsp.readFile(filePath, { encoding: 'utf8' })
-  let newFileContents = fileContents
-  if (filename !== primaryCodeFilenameCjs) {
-    newFileContents = newFileContents.replace(/\.js"/g, '.cjs"')
-    newFileContents = newFileContents.replace(/\.js'/g, '.cjs\'')
-  }
-  newFileContents = newFileContents.replace(/\.js\.map/g, '.cjs.map')
-  await fsp.writeFile(filePath, newFileContents, { encoding: 'utf8' })
-}
-
-async function insertVersionNumbers() {
-  const packageJson = await fsp.readFile('./package.json', { encoding: 'utf8' })
-  const packageJsonObj = JSON.parse(packageJson)
-  const version = packageJsonObj.version
-
-  const esmFile = `${esmOutputDir}/${primaryCodeFilenameEsm}`
-  const cjsFile = `${cjsOutputDir}/${primaryCodeFilenameCjs}`
-
-  await insertVersionNumber(esmFile, version)
-  await insertVersionNumber(cjsFile, version)
-}
-
-async function insertVersionNumber(file: string, version: string) {
-  let fileContents = await fsp.readFile(file, 'utf8')
-  if (!fs.existsSync(file)) {
-    log(`skipped inserting version because of missing file: ${file}`)
-  }
-  fileContents = fileContents.replace(/__VERSION__/g, version)
-  await fsp.writeFile(file, fileContents, { encoding: 'utf8' })
 }
 
 function isNodeVersion(str: unknown): str is NodeVersion {
@@ -383,15 +379,6 @@ function getNodeVersionFromArg(): NodeVersion {
     throw new Error(`Missing required param for node version (${nodeTestVersions.join(', ')})`)
   }
   return nodeVersionFromArg
-}
-
-function exit(exitCode: number, messageOrError: unknown) {
-  if (exitCode > 0) {
-    console.error(messageOrError)
-  } else {
-    log(messageOrError)
-  }
-  process.exit(exitCode)
 }
 
 async function ensureSwigCopiedToVersionTestDir() {
@@ -426,4 +413,39 @@ async function ensureSwigPackedCopiedToVersionTestDir() {
   tempDirPackedSwigCliPath = path.join(testTempPackedDir, await getPackedTarballName())
   await ensureDirectory(testTempPackedDir)
   await fsp.copyFile(path.join('./packed/', packedTarballName), tempDirPackedSwigCliPath)
+}
+
+async function conditionallyUnpackToTemp() {
+  if (!unzipToTempAfterPacking) {
+    log(`skipping unzip to temp ("unzipToTempAfterPacking" is set to false)`)
+    return
+  }
+  await emptyDirectory('./temp')
+  const packedPath = path.join('./packed/', await getPackedTarballName())
+  await unpackTarball(packedPath, './temp')
+}
+
+async function removeUnnecessaryDistFiles() {
+  const removeDistFiles = async (dir: string) => {
+    const filenames = await fsp.readdir(dir)
+    for (const filename of filenames) {
+      if (filename.includes('.d.ts') && !filename.startsWith('index')) {
+        const filePath = path.join(dir, filename)
+        await fsp.rm(filePath)
+      }
+    }
+  }
+  await Promise.all([
+    removeDistFiles('./dist/esm'),
+    removeDistFiles('./dist/cjs')
+  ])
+}
+
+async function doRollup(configFile: string) {
+  await spawnAsync('node', [rollupPath, '--config', configFile])
+}
+
+async function copyCjsPackageJsonToDist() {
+  const packageJson = await fsp.readFile('./package.cjs.json', { encoding: 'utf8' })
+  await fsp.writeFile('./dist/cjs/package.json', packageJson, { encoding: 'utf8' })
 }

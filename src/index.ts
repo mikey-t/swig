@@ -1,7 +1,36 @@
-import { Task, NamedTask, TaskOrNamedTask } from './Swig.js'
 import { getSwigInstance } from './singletonManager.js'
 
-export { Task, NamedTask, TaskOrNamedTask }
+/**
+ * Any function that is async or returns a Promise.
+ * See {@link TaskOrNamedTask} for more info.
+ */
+export type Task = () => Promise<unknown>
+
+/**
+ * A tuple (array with 2 values) of `[string, Task]` that can be used to provide a label for an anonymous function.
+ * See {@link TaskOrNamedTask} for more info.
+ */
+export type NamedTask = [string, Task]
+
+/**
+ * ```javascript
+ * Task | NamedTask
+ * ```
+ *   - Any function that is async or returns a Promise
+ *   - A tuple (array with 2 values) of `[string, Task]` that can be used to provide a label for an anonymous function
+ * 
+ * Example use of {@link Swig#series} and {@link Swig#parallel} with {@link Task} and {@link NamedTask} params:
+ * 
+ * ```javascript
+ * series(
+ *   task1,
+ *   ['task2', async () => {}],
+ *   task3,
+ *   parallel(task4, ['task5', async () => {}])
+ * )
+ * ```
+ */
+export type TaskOrNamedTask = Task | NamedTask
 
 /**
  * Call a list of async functions that are each a {@link TaskOrNamedTask} (see below) in order, waiting for each to complete before starting the next.

@@ -1,1 +1,1 @@
-node ./node_modules/swig-cli/dist/esm/SwigStartupWrapper.js $args
+node ./node_modules/swig-cli/dist/SwigStartupWrapper.js $args

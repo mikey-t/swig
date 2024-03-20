@@ -112,7 +112,7 @@ Example output with named anonymous tasks:
 [6:09:26 PM] Finished ✅ copyServerBuild after 0 ms
 ```
 
-Wow! Nice!
+Nice!
 
 ## Error Behavior
 
@@ -130,7 +130,7 @@ If you have more complicated error behavior requirements, you can simply write u
 
 For a typescript swigfile.ts to work, you need to install one of these Node.js typescript loaders as a dev dependency in your project: [tsx](https://github.com/esbuild-kit/tsx) OR [ts-node](https://typestrong.org/ts-node/docs/). At the time of writing, ts-node doesn't work well with ESM and tsx is significantly faster, so tsx is the current recommended loader.
 
-For ts-node, note that I'm using the `-T` option under the hood to speed up execution ([`--transpileOnly`](https://typestrong.org/ts-node/docs/options#transpileonly)). There's valid reasons not to use this, but I generally rely on the IDE along with plugins like eslint plugins to find "compile-time" errors when I'm using ts-node in a dev situation rather than slowing down the execution with these type of checks. And if you don't use a good IDE for some reason, you'll still get some of the errors - you'll just see them at a slightly different spot in the execution process. But there are plenty of scenarios where this will let you shoot yourself in the foot, so be aware if you're writing code in Notepad.exe or something. In the future I'd like to allow overriding swig's default ts-node config so this and other ts-node options can be changed.
+For ts-node, note that I'm using the `-T` option under the hood to speed up execution ([`--transpileOnly`](https://typestrong.org/ts-node/docs/options#transpileonly)). There's valid reasons not to use this, but I generally rely on the IDE along with plugins like eslint plugins to find "compile-time" errors when I'm using ts-node in a dev situation rather than slowing down the execution with these *types of checks* (see what I did there?). And if you don't use a good IDE for some reason, you'll still get some of the errors - you'll just see them at a slightly different spot in the execution process. But there are plenty of scenarios where this will let you shoot yourself in the foot, so be aware if you're writing code in Notepad.exe or something. In the future I'd like to allow overriding swig's default ts-node config so this and other ts-node options can be changed.
 
 If you don't want to install ts-node or want to do your own transpilation, you can have 2 swigfiles in your directory and it'll pick the first one it finds, starting with the non-typescript versions. So if you have `swigfile.ts` file and maybe you have it automatically being transpiled to `swigfile.js`, then swig will pick up and use the `swigfile.js` version instead of using ts-node. Don't forget to setup live watching of your swigfile if you're actively making changes and re-running it (such as with `tsc --watch` or whatever tool you're using).You wouldn't want to end up in a situation where something isn't doing what you think it should only because it doesn't have your latest changes.
 
@@ -148,11 +148,11 @@ UPDATE for tsx: `tsx` will not currently work correctly for all functionality in
 
 My recommendation is to install `swig-cli` as as global npm package (`npm i -g swig-cli`) because it will run much faster (no initial delay from npm/npx - see below), and you can type less.
 
-My opinion is that running stuff through npx and npm aliases is annoying because of the initial delay on each startup. For me this delay can be anywhere between 1 second and 4-8 seconds for some reason. That's not all that long, but it feels like an eternity when running a task that should only take a few milliseconds. This is why I prefer and recommend using a global install of `swig-cli` so you can call `swig` directly without incurring the startup delay.
+My opinion is that running stuff through npx and npm aliases is annoying because of the initial delay on each task execution. For me this delay can be anywhere between 1 second and 4-8 seconds for some reason. That's not all that long, but it feels like an eternity when running a task that should only take a few milliseconds. This is why I prefer and recommend using a global install of `swig-cli` so you can call `swig` directly without incurring the startup delay.
 
 ## Using Npx
 
-If you choose not to install `swig-cli` globally (see above) and don't want to use npm aliases (see below), then you simply prefix all your commands with `npx`:
+If you choose not to install `swig-cli` globally (see above) and don't want to use npm aliases (see below), then you will need to prefix all your commands with `npx`:
 
 ```
 npx swig yourTask
@@ -160,7 +160,7 @@ npx swig yourTask
 
 ## Npm Aliases
 
-This isn't the recommended approach, but if you choose to use npm aliases anyway, you could setup a single alias this this:
+This isn't the recommended approach, but if you choose to use npm aliases anyway, you could setup a single alias like this:
 
 ```json
 "scripts": {

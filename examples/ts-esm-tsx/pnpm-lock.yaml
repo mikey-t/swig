@@ -6,10 +6,10 @@ settings:
 
 devDependencies:
   swig-cli:
-    specifier: link:..\..
-    version: link:../..
+    specifier: file:..\..\packed\swig-cli-0.0.18-alpha2.tgz
+    version: file:../../packed/swig-cli-0.0.18-alpha2.tgz
   tsx:
-    specifier: ^4.6.1
+    specifier: ^4.7.1
     version: 4.7.1
 
 packages:
@@ -260,8 +260,8 @@ packages:
     dev: true
     optional: true
 
-  /get-tsconfig@4.7.2:
-    resolution: {integrity: sha512-wuMsz4leaj5hbGgg4IvDU0bqJagpftG5l5cXIAvo8uZrqn0NJqwtfupTN00VnkQJPcIRrxYrm1Ue24btpCha2A==}
+  /get-tsconfig@4.7.3:
+    resolution: {integrity: sha512-ZvkrzoUA0PQZM6fy6+/Hce561s+faD1rsNwhnO5FelNjyy7EMGJ3Rz1AQ8GYDWjhRs/7dBLOEJvhK8MiEJOAFg==}
     dependencies:
       resolve-pkg-maps: 1.0.0
     dev: true
@@ -276,7 +276,14 @@ packages:
     hasBin: true
     dependencies:
       esbuild: 0.19.12
-      get-tsconfig: 4.7.2
+      get-tsconfig: 4.7.3
     optionalDependencies:
       fsevents: 2.3.3
+    dev: true
+
+  file:../../packed/swig-cli-0.0.18-alpha2.tgz:
+    resolution: {integrity: sha512-MdHgirHY7MnElxad8oB4iWjW3vjVOOnDY7VcSwxM26warDjAT+7qTEEHWqG8w2lZklzwEeqtDF0CcecJvN0ZKA==, tarball: file:../../packed/swig-cli-0.0.18-alpha2.tgz}
+    name: swig-cli
+    version: 0.0.18-alpha2
+    hasBin: true
     dev: true

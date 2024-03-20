@@ -1,5 +1,4 @@
 import { SimpleSpawnResult, log, simpleSpawnAsync } from '@mikeyt23/node-cli-utils'
-import { only } from '@mikeyt23/node-cli-utils/testUtils'
 import assert from 'node:assert'
 import fs from 'node:fs'
 import path from 'node:path'
@@ -19,9 +18,11 @@ const exampleProjects = [
 ]
 
 // If non-empty, only these example projects will be tested
-const projectsToTestOverride: string[] = [] 
+const projectsToTestOverride: string[] = []
 // const projectsToTestOverride: string[] = ['ts-esm-tsx']
-// const projectsToTestOverride: string[] = ['ts-cjs-tsnode'] 
+// const projectsToTestOverride: string[] = ['ts-cjs-tsnode']
+// const projectsToTestOverride: string[] = ['cjs-cjs']
+// const projectsToTestOverride: string[] = ['ts-esm-tsnode']
 
 const logFailedResults = true
 const logAllTaskResults = false
@@ -43,10 +44,10 @@ const nodeVersionMessage = nodeVersion
   : `current version directly in examples directory (${process.version})`
 log(`node version to test: ${nodeVersionMessage}`)
 
-const swigRelativePath = 'node_modules/swig-cli/dist/esm/SwigStartupWrapper.js'
+const swigRelativePath = 'node_modules/swig-cli/dist/SwigStartupWrapper.js'
 
 // Use the installation of swig-cli from the ts-esm-tsx example project for the cases where swig isn't installed
-const tsEsmTsxSwigStartupWrapperRelativePath = '../ts-esm-tsx/node_modules/swig-cli/dist/esm/SwigStartupWrapper.js'
+const tsEsmTsxSwigStartupWrapperRelativePath = '../ts-esm-tsx/node_modules/swig-cli/dist/SwigStartupWrapper.js'
 
 const examplesDir = path.resolve(process.cwd(), 'examples')
 
@@ -84,7 +85,7 @@ let numAsserts = 0
 for (const exampleProject of exampleProjectsToTest) {
   describe(`basic tests for example project ${exampleProject}`, () => {
     const examplePath = path.join(examplesDir, exampleProject)
-    const swigStartupWrapperPath = swigRelativePath
+    const swigStartupWrapperPath = path.join(examplePath, swigRelativePath)
 
     test('example project exists and is ready to test', async () => {
       if (!fs.existsSync(examplePath)) {
@@ -191,8 +192,8 @@ describe('no-swig-cli-installed', () => {
   })
 })
 
-describe('no-swigfile', only, () => {
-  it('throws an error if there is no swigfile', only, async () => {
+describe('no-swigfile', () => {
+  it('throws an error if there is no swigfile', async () => {
     const result = await getTaskResultSpecial('no-swigfile', swigRelativePath)
     assert.strictEqual(result.code, expectedErrorCode)
     assert.match(result.stderr, /Task file not found - must be one of the following: swigfile.cjs, swigfile.mjs, swigfile.js, swigfile.ts/)

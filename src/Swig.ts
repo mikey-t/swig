@@ -1,43 +1,11 @@
-import * as path from 'node:path'
 import fs from 'node:fs'
+import * as path from 'node:path'
 import { pathToFileURL } from 'node:url'
-
-export const traceEnabled = false
+import { Task, TaskOrNamedTask } from './index.js'
+import { AnsiColor, color, cyan, gray, green, log, purple, red, yellow } from './utils.js'
 
 const showModeInStartMessage = false
 const showHelpInStartMessage = false
-
-/**
- * Any function that is async or returns a Promise.
- * See {@link TaskOrNamedTask} for more info.
- */
-export type Task = () => Promise<unknown>
-
-/**
- * A tuple (array with 2 values) of `[string, Task]` that can be used to provide a label for an anonymous function.
- * See {@link TaskOrNamedTask} for more info.
- */
-export type NamedTask = [string, Task]
-
-/**
- * ```javascript
- * Task | NamedTask
- * ```
- *   - Any function that is async or returns a Promise
- *   - A tuple (array with 2 values) of `[string, Task]` that can be used to provide a label for an anonymous function
- * 
- * Example use of {@link Swig#series} and {@link Swig#parallel} with {@link Task} and {@link NamedTask} params:
- * 
- * ```javascript
- * series(
- *   task1,
- *   ['task2', async () => {}],
- *   task3,
- *   parallel(task4, ['task5', async () => {}])
- * )
- * ```
- */
-export type TaskOrNamedTask = Task | NamedTask
 
 interface LogNameAndTask { logName: string, task: Task }
 
@@ -64,7 +32,7 @@ class CliParam {
 export default class Swig {
   isCommonJS = typeof require === "function" && typeof module === "object" && module.exports
   isEsm = !this.isCommonJS
-  private versionString: string = '__VERSION__' // Set in build script in transpiled version of file
+  private versionString: string = '__VERSION__' // This is replaced in the build script
   private cwd = process.cwd()
   private seriesCounter = 1
   private parallelCounter = 1
@@ -323,15 +291,16 @@ export default class Swig {
 
     let module: object
     let tasks: TasksMap
+    const swigfilePath = taskFilePathOrUrl.toString()
     try {
-      module = await import(taskFilePathOrUrl.toString())
+      module = await import(swigfilePath)
       tasks = Object.entries(module).filter(([, value]) => this.isFunction(value))
     } catch (err) {
-      if (taskFilePathOrUrl.toString().endsWith('.ts') && err instanceof Error && err.message.includes('exports is not defined')) {
+      if (swigfilePath && swigfilePath.endsWith('.ts') && err instanceof Error && err.message.includes('exports is not defined')) {
         console.log(`${yellow('Suggestion:')} try adjusting your tsconfig.json compilerOptions (especially the "module" setting)`)
       }
       console.error(err)
-      return this.failureExit(`Could not import task file ${taskFilePathOrUrl}`)
+      return this.failureExit(`Could not import task file ${swigfilePath}`)
     }
 
     if (cliParam.matches(this.listCommand)) {
@@ -380,35 +349,3 @@ export default class Swig {
     process.exit(0)
   }
 }
-
-export function log(message?: unknown, ...optionalParams: unknown[]) {
-  console.log(message, ...optionalParams)
-}
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function trace(message?: unknown, ...optionalParams: unknown[]) {
-  if (traceEnabled) {
-    console.log(message, ...optionalParams)
-  }
-}
-
-export enum AnsiColor {
-  RESET = '\x1b[0m',
-  RED = '\x1b[31m',
-  GREEN = '\x1b[32m',
-  YELLOW = '\x1b[33m',
-  CYAN = '\x1b[96m',
-  GRAY = '\x1b[90m',
-  PURPLE = '\x1b[35m'
-}
-
-const color = (str: string, colorAnsiCode: AnsiColor): string => {
-  return `${colorAnsiCode}${str}${AnsiColor.RESET}`
-}
-
-export const red = (str: string) => color(str, AnsiColor.RED)
-export const green = (str: string) => color(str, AnsiColor.GREEN)
-export const cyan = (str: string) => color(str, AnsiColor.CYAN)
-export const gray = (str: string) => color(str, AnsiColor.GRAY)
-export const purple = (str: string) => color(str, AnsiColor.PURPLE)
-export const yellow = (str: string) => color(str, AnsiColor.YELLOW)

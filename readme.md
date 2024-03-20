@@ -2,7 +2,7 @@
 
 Swig is a simple CLI tool for automating dev workflows via compositions of series and parallel tasks.
 
-Write simple javascript or typescript functions and execute them in a shell in your project's root directory.
+Write simple javascript or typescript functions and easily execute them in a shell in your project's root directory.
 
 Fast. Simple. Convenient.
 
@@ -36,7 +36,6 @@ For general getting started steps, continue below.
   ```
 
 - Create a `swigfile` in the root of your project, such as `swigfile.js` (see [Swigfile Syntax Options Matrix](#swigfile-syntax-options-matrix))
-- Add some tasks to your swigfile. Any exported function will do, but the magic happens when you start composing functions together with `series` and `parallel` - see examples below.
 - Add some tasks to your swigfile (see [Series, Parallel and Composability Example](#series-parallel-and-composability-example))
 - List detected tasks from your swigfile (exported functions):
   ```bash
@@ -72,12 +71,12 @@ If there are multiple swigfiles in your project directory, swig will use the fir
 | `.js`    | commonjs            | CommonJS            |       |
 | `.cjs`   | any                 | CommonJS            |       |
 | `.mjs`   | any                 | ESM                 |       |
-| `.ts`    | commonjs            | ESM and/or CommonJS | Must have valid `tsconfig.json` options. Must use `ts-node` and NOT `tsx`. |
-| `.ts`    | module              | ESM                 | Must have valid `tsconfig.json` options. May use either `tsx` or `ts-node`. |
+| `.ts`    | commonjs            | CommonJS | Must have valid `tsconfig.json` options. Must use `ts-node` and NOT `tsx` for CommonJS. |
+| `.ts`    | module              | ESM                 | Must have valid `tsconfig.json` options. Must have either `tsx` or `ts-node` installed. |
 
 If using typescript:
 
-- You must install either `tsx` or `ts-node` as a dev dependency in your project (Node typescript loaders). Note that `tsx` ESM functionality is advertised as being experimental, but it seems to work well, and also seems to have fewer issues than `ts-node`, and is much faster. You can install one of these by running `npm i -D tsx` or `npm i -D ts-node`.
+- You must install either `tsx` or `ts-node` as a dev dependency in your project. These are Node typescript loaders that allow immediate execution of typescript without a transpilation step. Note that `tsx` ESM functionality is advertised as being experimental, but it seems to work well, and also seems to have fewer issues than `ts-node`, and is much faster. You can install one of these by running `npm i -D tsx` OR `npm i -D ts-node`.
 - In a typescript project where the package.json is set to CommonJS, you will need to use `ts-node` and NOT `tsx`
 - Your `tsconfig.json` needs to have settings that match your `package.json` type. For example, if you have your `package.json` type field set to `module`, then your `tsconfig.json` needs to have a `module` setting of "ES2020" or "ESNext" (something that supports ESM). See [Swig Typescript Quick Start](./docs/SwigTypescriptQuickStart.md) for an example `tsconfig.json` file.
 - If using `ts-node`, speed up execution time by configuring it to skip type checking (this is only required for NodeJS version 18.19 and above):
