@@ -1,8 +1,8 @@
 import fs from 'node:fs'
 import * as path from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { Task, TaskOrNamedTask } from './index.js'
-import { AnsiColor, color, cyan, gray, green, log, purple, red, yellow } from './utils.js'
+import { Task, TaskOrNamedTask, isNamedTask } from './index.js'
+import { AnsiColor, color, cyan, gray, green, isFunction, log, purple, red, yellow } from './utils.js'
 
 const showModeInStartMessage = false
 const showHelpInStartMessage = false
@@ -61,8 +61,8 @@ export default class Swig {
     }
   }
 
-  // Don't call directly - see exports in src/index.ts. Also see TaskOrNamedTask for more info.
-  series(first: TaskOrNamedTask, ...rest: TaskOrNamedTask[]): Task {
+  // Don't call this directly - see module exports in src/index.ts. Also see TaskOrNamedTask for more info.
+  series = (first: TaskOrNamedTask, ...rest: TaskOrNamedTask[]): Task => {
     const innerSeries = async () => {
       for (const task of [first, ...rest]) {
         await this.runTask(this.getLogNameAndTask(task))
@@ -71,8 +71,8 @@ export default class Swig {
     return innerSeries
   }
 
-  // Don't call directly - see exports in src/index.ts. Also see TaskOrNamedTask for more info.
-  parallel(...tasks: TaskOrNamedTask[]): Task {
+  // Don't call this directly - see module exports in src/index.ts. Also see TaskOrNamedTask for more info.
+  parallel = (...tasks: TaskOrNamedTask[]): Task => {
     const innerParallel = async () => {
       const promises: Promise<void>[] = tasks.map(task => {
         return this.runTask(this.getLogNameAndTask(task))
@@ -97,32 +97,30 @@ export default class Swig {
   }
 
   private getLogNameAndTask(taskOrNamedTask: TaskOrNamedTask): LogNameAndTask {
-    this.throwIfNotActuallyATaskOrNamedTask(taskOrNamedTask)
-    if (Array.isArray(taskOrNamedTask)) {
+    this.throwIfNotTaskOrNamedTask(taskOrNamedTask)
+
+    if (isNamedTask(taskOrNamedTask)) {
       return { logName: taskOrNamedTask[0], task: taskOrNamedTask[1] }
-    } else {
-      let name = taskOrNamedTask.name
-      if (name === 'innerSeries') {
-        name = `nested_series_${this.seriesCounter.toString()}`
-        this.seriesCounter++
-      } else if (name === 'innerParallel') {
-        name = `nested_parallel_${this.parallelCounter.toString()}`
-        this.parallelCounter++
-      } else if (!name) {
-        name = 'anonymous'
-      }
-      return { logName: name, task: taskOrNamedTask }
     }
+
+    let name = taskOrNamedTask.name
+
+    if (name === 'innerSeries') {
+      name = `nested_series_${this.seriesCounter.toString()}`
+      this.seriesCounter++
+    } else if (name === 'innerParallel') {
+      name = `nested_parallel_${this.parallelCounter.toString()}`
+      this.parallelCounter++
+    } else if (!name) {
+      name = 'anonymous'
+    }
+
+    return { logName: name, task: taskOrNamedTask }
   }
 
-  private throwIfNotActuallyATaskOrNamedTask(taskOrNamedTask: TaskOrNamedTask) {
-    const errorMessage = `A param was not a Task (function) or a NamedTask ([string,function] tuple): ${taskOrNamedTask}`
-    if (Array.isArray(taskOrNamedTask)) {
-      if ((taskOrNamedTask.length !== 2 || typeof taskOrNamedTask[0] !== 'string' || !this.isFunction(taskOrNamedTask[1]))) {
-        throw new Error(errorMessage)
-      }
-    } else if (!this.isFunction(taskOrNamedTask)) {
-      throw new Error(errorMessage)
+  private throwIfNotTaskOrNamedTask(taskOrNamedTask: TaskOrNamedTask) {
+    if (!isNamedTask(taskOrNamedTask) && !isFunction(taskOrNamedTask)) {
+      throw new Error(`A param passed to "series" or "parallel" was not a Task (function) or a NamedTask ([string,function] tuple): ${taskOrNamedTask}`)
     }
   }
 
@@ -227,14 +225,6 @@ export default class Swig {
     return new CliParam(cliArg, false)
   }
 
-  private isFunction(task: unknown): boolean {
-    if (typeof task !== 'function') {
-      return false
-    }
-    const isClass = Object.getOwnPropertyDescriptor(task, 'prototype')?.writable === false
-    return !isClass
-  }
-
   private showTaskList(tasks: TasksMap, mainStartTime: number, filter?: string) {
     const taskNames = tasks.map(([name,]) => name)
     log(`Available tasks:`)
@@ -294,7 +284,7 @@ export default class Swig {
     const swigfilePath = taskFilePathOrUrl.toString()
     try {
       module = await import(swigfilePath)
-      tasks = Object.entries(module).filter(([, value]) => this.isFunction(value))
+      tasks = Object.entries(module).filter(([, value]) => isFunction(value))
     } catch (err) {
       if (swigfilePath && swigfilePath.endsWith('.ts') && err instanceof Error && err.message.includes('exports is not defined')) {
         console.log(`${yellow('Suggestion:')} try adjusting your tsconfig.json compilerOptions (especially the "module" setting)`)

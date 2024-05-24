@@ -1,4 +1,5 @@
 import { getSwigInstance } from './singletonManager.js'
+import { isFunction } from './utils.js'
 
 /**
  * Any function that is async or returns a Promise.
@@ -11,6 +12,25 @@ export type Task = () => Promise<unknown>
  * See {@link TaskOrNamedTask} for more info.
  */
 export type NamedTask = [string, Task]
+
+/**
+ * Helper method to determine if something is a function. This is accomplished by returning false if `typeof` is explicitly
+ * something other than "function" and also tries to ensure it's not actually a class by checking the existence and writability
+ * of the argument's "prototype" property.
+ */
+export { isFunction } from './utils.js'
+
+/**
+ * Type guard method for {@link NamedTask}.
+ */
+export function isNamedTask(value: unknown): value is NamedTask {
+  return (
+    Array.isArray(value)
+    && value.length === 2
+    && typeof value[0] === 'string'
+    && isFunction(value[1])
+  )
+}
 
 /**
  * ```javascript
@@ -62,6 +82,8 @@ export const series = (first: TaskOrNamedTask, ...rest: TaskOrNamedTask[]): Task
     const instanceSeries = swigInstance.series(first, ...rest)
     return instanceSeries()
   }
+  // Setting the name explicitly will prevent it from becoming 'anonymous' when executed later
+  Object.defineProperty(innerSeries, 'name', { value: 'innerSeries', writable: false })
   return innerSeries
 }
 
@@ -96,5 +118,7 @@ export const parallel = (first: TaskOrNamedTask, ...rest: TaskOrNamedTask[]): Ta
     const instanceParallel = swigInstance.parallel(first, ...rest)
     return instanceParallel()
   }
+  // Setting the name explicitly will prevent it from becoming 'anonymous' when executed later
+  Object.defineProperty(innerParallel, 'name', { value: 'innerParallel', writable: false })
   return innerParallel
 }

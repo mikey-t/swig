@@ -36,6 +36,8 @@ exports.withAnon = series(task1, async () => { console.log('anonymous task messa
 
 exports.withNamedAnon = series(task1, ['helloWorld', async () => { console.log('named anonymous task helloWorld') }])
 
+exports.nested = series(task1, parallel(series(task2, parallel(task3, task4)), task5))
+
 exports.task6 = task6
 
 class MyClass {

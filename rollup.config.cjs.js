@@ -9,6 +9,7 @@ import fs from 'node:fs'
 const tsconfigCjs = 'tsconfig.cjs.json'
 const version = JSON.parse(fs.readFileSync('package.json', 'utf8')).version
 const replaceOptions = { '__VERSION__': version, preventAssignment: true }
+const doNotMangleSymbols = ['series', 'innerSeries', 'parallel', 'innerParallel']
 
 export default [
   // CommonJS lib
@@ -23,7 +24,11 @@ export default [
       typescript({ tsconfig: tsconfigCjs, declaration: true, declarationMap: true, module: 'esnext' }),
       nodeResolve(),
       commonjs(),
-      terser(),
+      terser({
+        mangle: {
+          reserved: doNotMangleSymbols
+        }
+      }),
       replace(replaceOptions)
     ]
   },
@@ -40,7 +45,11 @@ export default [
       typescript({ tsconfig: tsconfigCjs, module: 'esnext' }),
       nodeResolve(),
       commonjs(),
-      terser(),
+      terser({
+        mangle: {
+          reserved: doNotMangleSymbols
+        }
+      }),
       replace(replaceOptions)
     ]
   }

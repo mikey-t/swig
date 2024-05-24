@@ -235,6 +235,7 @@ export var withNamedAnon = series(task1, [
         });
     })
 ]);
+export var nested = series(task1, parallel(series(task2, parallel(task3, task4)), task5));
 export var MyClass = function MyClass() {
     "use strict";
     _class_call_check(this, MyClass);

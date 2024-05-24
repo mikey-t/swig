@@ -105,3 +105,11 @@ export function logTable(data: string[][]): void {
     if (i === 0) log(lineSeparator)
   }
 }
+
+export const isFunction = (x: unknown): boolean => {
+  if (typeof x !== 'function') {
+    return false
+  }
+  const isClass = Object.getOwnPropertyDescriptor(x, 'prototype')?.writable === false
+  return !isClass
+}

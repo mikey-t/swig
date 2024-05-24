@@ -137,6 +137,7 @@ for (const exampleProject of exampleProjectsToTest) {
       for (const numberedTaskMessage of numberedTaskMessages) {
         assertOutputHasString(result.stdout, numberedTaskMessage)
       }
+      assertOutputHasString(result.stdout, 'nested_parallel_1')
     })
 
     test('single', async () => {
@@ -163,6 +164,18 @@ for (const exampleProject of exampleProjectsToTest) {
       assertSuccessCode(result)
       assertOutputHasString(result.stdout, 'task1 message')
       assertOutputHasString(result.stdout, 'named anonymous task helloWorld')
+    })
+
+    test('nested', async () => {
+      const result = await getTaskResult(exampleProject, swigStartupWrapperPath, 'nested')
+      assertSuccessCode(result)
+      for (const numberedTaskMessage of numberedTaskMessages) {
+        assertOutputHasString(result.stdout, numberedTaskMessage)
+      }
+      assertOutputHasString(result.stdout, 'nested_parallel_1')
+      assertOutputHasString(result.stdout, 'nested_parallel_2')
+      assertOutputHasString(result.stdout, 'nested_series_1')
+      assert.strictEqual(result.stdout.toLowerCase().includes('anonymous'), false, 'output should not have "anonymous" anywhere in the output - nested series and parallel calls should be labeled')
     })
 
     it('outputs an error for unknown task', async () => {

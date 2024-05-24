@@ -17,7 +17,8 @@
     "howfat",
     "swigfile",
     "swigfiles",
-    "TSNODE"
+    "TSNODE",
+    "writability"
   ],
   "typescript.preferences.importModuleSpecifier": "relative",
   "javascript.preferences.importModuleSpecifier": "relative"

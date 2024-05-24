@@ -107,11 +107,11 @@ export async function tscCjs() {
 }
 
 export async function watchEsm() {
-  await spawnAsyncLongRunning('node', [tscPath, '--p', tsconfigEsm, '--watch'])
+  await doRollup(rollupConfigEsm, true)
 }
 
 export async function watchCjs() {
-  await spawnAsyncLongRunning('node', [tscPath, '--p', tsconfigCjs, '--watch'])
+  await doRollup(rollupConfigCjs, true)
 }
 
 export const pack = series(cleanPackedDir, doPack, conditionallyUnpackToTemp)
@@ -441,8 +441,12 @@ async function removeUnnecessaryDistFiles() {
   ])
 }
 
-async function doRollup(configFile: string) {
-  await spawnAsync('node', [rollupPath, '--config', configFile])
+async function doRollup(configFile: string, watch = false) {
+  if (watch) {
+    await spawnAsyncLongRunning('node', [rollupPath, '--config', configFile, '--watch'])
+  } else {
+    await spawnAsync('node', [rollupPath, '--config', configFile])
+  }
 }
 
 async function copyCjsPackageJsonToDist() {

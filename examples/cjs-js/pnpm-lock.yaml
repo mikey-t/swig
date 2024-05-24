@@ -1,19 +1,24 @@
-lockfileVersion: '6.0'
+lockfileVersion: '9.0'
 
 settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
-devDependencies:
-  swig-cli:
-    specifier: file:..\..\packed\swig-cli-1.0.1.tgz
-    version: file:../../packed/swig-cli-1.0.1.tgz
+importers:
+
+  .:
+    devDependencies:
+      swig-cli:
+        specifier: file:..\..\packed\swig-cli-1.0.2.tgz
+        version: file:../../packed/swig-cli-1.0.2.tgz
 
 packages:
 
-  file:../../packed/swig-cli-1.0.1.tgz:
-    resolution: {integrity: sha512-00j7+eXS+IEdYM8OSXcOug11gihUe6TppQvO5wag+WiL7nDRz1hNERzPyVtdqSlYADF6nLuWTEtc3TSCzai+kA==, tarball: file:../../packed/swig-cli-1.0.1.tgz}
-    name: swig-cli
-    version: 1.0.1
+  swig-cli@file:../../packed/swig-cli-1.0.2.tgz:
+    resolution: {integrity: sha512-56aGiac4u2p1GrQoGBZmX/ZmR+42xONbxcEBK6a7TUrkAQDeRne8BnBMtrgE0nbM40Nqg47XcWaKISLmyUoTZw==, tarball: file:../../packed/swig-cli-1.0.2.tgz}
+    version: 1.0.2
     hasBin: true
-    dev: true
+
+snapshots:
+
+  swig-cli@file:../../packed/swig-cli-1.0.2.tgz: {}

@@ -39,8 +39,8 @@ devDependencies:
     specifier: ^4.13.0
     version: 4.13.0
   swig-cli:
-    specifier: ^0.0.18
-    version: 0.0.18
+    specifier: ^1.0.1
+    version: 1.0.1
   tslib:
     specifier: ^2.6.2
     version: 2.6.2
@@ -1658,8 +1658,8 @@ packages:
     engines: {node: '>= 0.4'}
     dev: true
 
-  /swig-cli@0.0.18:
-    resolution: {integrity: sha512-Ki/tfy9evms/diOkkxqLk30Bs21PH8SleqrAhLDsUmiR0nRNMeHsHJiirh5++caZ2HYBb5ZnNB92Z6zzHdEdIA==}
+  /swig-cli@1.0.1:
+    resolution: {integrity: sha512-00j7+eXS+IEdYM8OSXcOug11gihUe6TppQvO5wag+WiL7nDRz1hNERzPyVtdqSlYADF6nLuWTEtc3TSCzai+kA==}
     hasBin: true
     dev: true
 

@@ -8,6 +8,7 @@ import fs from 'node:fs'
 const tsconfigEsm = 'tsconfig.esm.json'
 const version = JSON.parse(fs.readFileSync('package.json', 'utf8')).version
 const replaceOptions = { '__VERSION__': version, preventAssignment: true }
+const doNotMangleSymbols = ['series', 'innerSeries', 'parallel', 'innerParallel']
 
 export default [
   // ESM lib
@@ -21,7 +22,11 @@ export default [
     plugins: [
       typescript({ tsconfig: tsconfigEsm, declaration: true, declarationMap: true }),
       nodeResolve(),
-      terser(),
+      terser({
+        mangle: {
+          reserved: doNotMangleSymbols
+        }
+      }),
       replace(replaceOptions)
     ]
   },
@@ -36,7 +41,11 @@ export default [
     plugins: [
       typescript({ tsconfig: tsconfigEsm }),
       nodeResolve(),
-      terser(),
+      terser({
+        mangle: {
+          reserved: doNotMangleSymbols
+        }
+      }),
       replace(replaceOptions)
     ]
   },
@@ -51,7 +60,11 @@ export default [
     plugins: [
       typescript({ tsconfig: tsconfigEsm }),
       nodeResolve(),
-      terser(),
+      terser({
+        mangle: {
+          reserved: doNotMangleSymbols
+        }
+      }),
       replace(replaceOptions)
     ]
   }

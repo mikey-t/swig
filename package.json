@@ -1,6 +1,6 @@
 {
   "name": "swig-cli",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Swig is a simple CLI tool for automating dev workflows via compositions of series and parallel tasks.",
   "repository": {
     "type": "git",
@@ -63,7 +63,7 @@
     "@typescript-eslint/parser": "^7.1.0",
     "eslint": "^8.57.0",
     "rollup": "^4.13.0",
-    "swig-cli": "^0.0.18",
+    "swig-cli": "^1.0.1",
     "tslib": "^2.6.2",
     "tsx": "^4.7.1",
     "typescript": "^5.3.3"
