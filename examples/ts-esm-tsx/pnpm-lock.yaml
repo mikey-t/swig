@@ -9,8 +9,8 @@ importers:
   .:
     devDependencies:
       swig-cli:
-        specifier: file:..\..\packed\swig-cli-1.0.2.tgz
-        version: file:../../packed/swig-cli-1.0.2.tgz
+        specifier: file:..\..\packed\swig-cli-1.0.3.tgz
+        version: file:../../packed/swig-cli-1.0.3.tgz
       tsx:
         specifier: ^4.7.1
         version: 4.7.1
@@ -171,9 +171,9 @@ packages:
   resolve-pkg-maps@1.0.0:
     resolution: {integrity: sha512-seS2Tj26TBVOC2NIc2rOe2y2ZO7efxITtLZcGSOnHHNOQ7CkiUBfw0Iw2ck6xkIhPwLhKNLS8BO+hEpngQlqzw==}
 
-  swig-cli@file:../../packed/swig-cli-1.0.2.tgz:
-    resolution: {integrity: sha512-56aGiac4u2p1GrQoGBZmX/ZmR+42xONbxcEBK6a7TUrkAQDeRne8BnBMtrgE0nbM40Nqg47XcWaKISLmyUoTZw==, tarball: file:../../packed/swig-cli-1.0.2.tgz}
-    version: 1.0.2
+  swig-cli@file:../../packed/swig-cli-1.0.3.tgz:
+    resolution: {integrity: sha512-aiGEHWaAZ/3KZsG2fE3rqx9RDddiZtE0courJ4WnGNKfmBbUb7n94hH177HBbvkK9HUR8bJ7I1GDM2jZLdlP0Q==, tarball: file:../../packed/swig-cli-1.0.3.tgz}
+    version: 1.0.3
     hasBin: true
 
   tsx@4.7.1:
@@ -287,7 +287,7 @@ snapshots:
 
   resolve-pkg-maps@1.0.0: {}
 
-  swig-cli@file:../../packed/swig-cli-1.0.2.tgz: {}
+  swig-cli@file:../../packed/swig-cli-1.0.3.tgz: {}
 
   tsx@4.7.1:
     dependencies:

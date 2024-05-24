@@ -15,8 +15,8 @@ importers:
         specifier: ^1.4.8
         version: 1.4.11
       swig-cli:
-        specifier: file:..\..\packed\swig-cli-1.0.2.tgz
-        version: file:../../packed/swig-cli-1.0.2.tgz
+        specifier: file:..\..\packed\swig-cli-1.0.3.tgz
+        version: file:../../packed/swig-cli-1.0.3.tgz
       typescript:
         specifier: ^5.3.2
         version: 5.4.3
@@ -545,9 +545,9 @@ packages:
     resolution: {integrity: sha512-pQ+V+nYQdC5H3Q7qBZAz/MO6lwGhoC2gOAjuouGf/VO0m7vQRh8QNMl2Uf6SwAtzZ9bOw3UIeBukEGNJl5dtXQ==}
     engines: {node: '>=14.16'}
 
-  swig-cli@file:../../packed/swig-cli-1.0.2.tgz:
-    resolution: {integrity: sha512-56aGiac4u2p1GrQoGBZmX/ZmR+42xONbxcEBK6a7TUrkAQDeRne8BnBMtrgE0nbM40Nqg47XcWaKISLmyUoTZw==, tarball: file:../../packed/swig-cli-1.0.2.tgz}
-    version: 1.0.2
+  swig-cli@file:../../packed/swig-cli-1.0.3.tgz:
+    resolution: {integrity: sha512-aiGEHWaAZ/3KZsG2fE3rqx9RDddiZtE0courJ4WnGNKfmBbUb7n94hH177HBbvkK9HUR8bJ7I1GDM2jZLdlP0Q==, tarball: file:../../packed/swig-cli-1.0.3.tgz}
+    version: 1.0.3
     hasBin: true
 
   to-regex-range@5.0.1:
@@ -1084,7 +1084,7 @@ snapshots:
       '@tokenizer/token': 0.3.0
       peek-readable: 5.0.0
 
-  swig-cli@file:../../packed/swig-cli-1.0.2.tgz: {}
+  swig-cli@file:../../packed/swig-cli-1.0.3.tgz: {}
 
   to-regex-range@5.0.1:
     dependencies:

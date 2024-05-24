@@ -26,7 +26,7 @@ const projectsToTestOverride: string[] = []
 
 const logFailedResults = true
 const logAllTaskResults = false
-const nodeTestVersionsImmutable = ['16.20.2', '18.18.2', '18.19.1', '20.11.1'] as const
+const nodeTestVersionsImmutable = ['16.20.2', '18.18.2', '18.19.1', '20.13.1'] as const
 const nodeVersionTestBaseDir = 'C:\\temp\\swig-test'
 
 const nodeTestVersions: string[] = [...nodeTestVersionsImmutable]

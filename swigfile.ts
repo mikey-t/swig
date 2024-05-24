@@ -13,7 +13,7 @@ import path from 'node:path'
 import { parallel, series } from './node_modules/swig-cli/dist/esm/index.js'
 
 const traceEnabled = true
-const nodeTestVersionsImmutable = ['16.20.2', '18.18.2', '18.19.1', '20.11.1'] as const
+const nodeTestVersionsImmutable = ['16.20.2', '18.18.2', '18.19.1', '20.13.1'] as const
 const testTempDir = 'C:\\temp\\swig-test'
 const testTempPackedDir = path.join(testTempDir, 'swig-cli-packed')
 const usePackedForDefaultTests = true
@@ -196,7 +196,7 @@ export const testAllNodeVersions = series(
     () => doTestNodeVersion('16.20.2'),
     () => doTestNodeVersion('18.18.2'),
     () => doTestNodeVersion('18.19.1'),
-    () => doTestNodeVersion('20.11.1')
+    () => doTestNodeVersion('20.13.1')
   )
 )
 
@@ -205,7 +205,7 @@ export const testAllNodeVersionsInSeries = series(
   () => doTestNodeVersion('16.20.2'),
   () => doTestNodeVersion('18.18.2'),
   () => doTestNodeVersion('18.19.1'),
-  () => doTestNodeVersion('20.11.1')
+  () => doTestNodeVersion('20.13.1')
 )
 
 export async function npmInstallExamples() {

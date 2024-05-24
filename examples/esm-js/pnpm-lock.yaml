@@ -9,16 +9,16 @@ importers:
   .:
     devDependencies:
       swig-cli:
-        specifier: file:..\..\packed\swig-cli-1.0.2.tgz
-        version: file:../../packed/swig-cli-1.0.2.tgz
+        specifier: file:..\..\packed\swig-cli-1.0.3.tgz
+        version: file:../../packed/swig-cli-1.0.3.tgz
 
 packages:
 
-  swig-cli@file:../../packed/swig-cli-1.0.2.tgz:
-    resolution: {integrity: sha512-56aGiac4u2p1GrQoGBZmX/ZmR+42xONbxcEBK6a7TUrkAQDeRne8BnBMtrgE0nbM40Nqg47XcWaKISLmyUoTZw==, tarball: file:../../packed/swig-cli-1.0.2.tgz}
-    version: 1.0.2
+  swig-cli@file:../../packed/swig-cli-1.0.3.tgz:
+    resolution: {integrity: sha512-aiGEHWaAZ/3KZsG2fE3rqx9RDddiZtE0courJ4WnGNKfmBbUb7n94hH177HBbvkK9HUR8bJ7I1GDM2jZLdlP0Q==, tarball: file:../../packed/swig-cli-1.0.3.tgz}
+    version: 1.0.3
     hasBin: true
 
 snapshots:
 
-  swig-cli@file:../../packed/swig-cli-1.0.2.tgz: {}
+  swig-cli@file:../../packed/swig-cli-1.0.3.tgz: {}

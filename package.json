@@ -1,6 +1,6 @@
 {
   "name": "swig-cli",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Swig is a simple CLI tool for automating dev workflows via compositions of series and parallel tasks.",
   "repository": {
     "type": "git",
@@ -49,23 +49,23 @@
   "author": "Mike Thompson",
   "license": "MIT",
   "volta": {
-    "node": "20.11.1"
+    "node": "20.13.1"
   },
   "devDependencies": {
-    "@mikeyt23/node-cli-utils": "^2.0.35",
-    "@rollup/plugin-commonjs": "^25.0.7",
+    "@mikeyt23/node-cli-utils": "^2.0.36",
+    "@rollup/plugin-commonjs": "^25.0.8",
     "@rollup/plugin-node-resolve": "^15.2.3",
     "@rollup/plugin-replace": "^5.0.5",
     "@rollup/plugin-terser": "^0.4.4",
     "@rollup/plugin-typescript": "^11.1.6",
-    "@types/node": "^20.11.24",
-    "@typescript-eslint/eslint-plugin": "^7.1.0",
-    "@typescript-eslint/parser": "^7.1.0",
+    "@types/node": "^20.12.12",
+    "@typescript-eslint/eslint-plugin": "^7.10.0",
+    "@typescript-eslint/parser": "^7.10.0",
     "eslint": "^8.57.0",
-    "rollup": "^4.13.0",
-    "swig-cli": "^1.0.1",
+    "rollup": "^4.18.0",
+    "swig-cli": "^1.0.2",
     "tslib": "^2.6.2",
-    "tsx": "^4.7.1",
-    "typescript": "^5.3.3"
+    "tsx": "^4.11.0",
+    "typescript": "^5.4.5"
   }
 }

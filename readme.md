@@ -126,7 +126,7 @@ Tested Node.js versions:
 - 16.20.2
 - 18.18.2
 - 18.19.1
-- 20.11.1
+- 20.13.1
 
 ### Optional dependencies
 
