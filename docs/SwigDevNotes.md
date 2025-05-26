@@ -141,6 +141,8 @@ testNodeVersion <node_version> // See swigfile.ts -> nodeTestVersionsImmutable
 testAllNodeVersions
 ```
 
+**Reminder**: when running any variant of testing node versions, use an admin terminal to prevent access denied issues when setting up and copying files to the temp directory.
+
 Pass `skip` to `testNodeVersion` and `testAllNodeVersions` to skip the prep step (copying files, pnpm install, switching of swig-cli reference).
 
 Pass `o` to any of the test commands to only execute tests marked with "only".
@@ -189,6 +191,6 @@ Some things to keep in mind that I wouldn't want to lose if I were to switch str
     - If the consumer is using a global install of swig but forgot to install it in their local project so they can import `series` and `parallel` into their swigfile, it'll give them a friendly message with the necessary command
     - If they've got a mismatch in their task definition file syntax and the package.json type, it tells them what to change (file extension vs package.json vs task file syntax change)
 
-So, what if the a path to swig or ts-node or tsx changes? We can add branching logic in the startup wrapper - that's kind of what it's for anyway - but that could become a maintenance issue over time. Whether I get serious about diverging from this strategy will depend on how often (if ever) ts-node or tsx changes their bin path and whether I want to take the hit of adding additional dependencies or additional custom code to resolve paths instead of hitting them directly.
+So, what if the path to swig or ts-node or tsx changes? We can add branching logic in the startup wrapper - that's kind of what it's for anyway - but that could become a maintenance issue over time. Whether I get serious about diverging from this strategy will depend on how often (if ever) ts-node or tsx changes their bin path and whether I want to take the hit of adding additional dependencies or additional custom code to resolve paths instead of hitting them directly.
 
 UPDATE: perhaps I could rely on the existence of `./node_modules/.bin/ts-node` to determine whether it's installed as a dependency. That file being there means it's installed, and parsing that file would make it pretty easy to find the executable. Seems a little hacky maybe, but as long as there's logging to say what path was chosen and why, that seems like a reasonable compromise IMO. Test by moving my swig executable location locally and verifying that it can still be found with the new "script finder" logic.

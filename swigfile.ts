@@ -13,7 +13,8 @@ import path from 'node:path'
 import { parallel, series } from './node_modules/swig-cli/dist/esm/index.js'
 
 const traceEnabled = true
-const nodeTestVersionsImmutable = ['16.20.2', '18.18.2', '18.19.1', '20.13.1'] as const
+// Important: NodeJS has a bug in versions >= 18.17.0 and <= 18.18.2 that prevents swig from being able to dynamically import a swigfile when used with tsx
+const nodeTestVersionsImmutable = ['16.20.2', '18.16.1', '18.19.0', '20.19.2', '22.16.0', '24.1.0'] as const
 const testTempDir = 'C:\\temp\\swig-test'
 const testTempPackedDir = path.join(testTempDir, 'swig-cli-packed')
 const usePackedForDefaultTests = true
@@ -194,18 +195,22 @@ export const testAllNodeVersions = series(
   cleanTestNodePackedDir,
   parallel(
     () => doTestNodeVersion('16.20.2'),
-    () => doTestNodeVersion('18.18.2'),
-    () => doTestNodeVersion('18.19.1'),
-    () => doTestNodeVersion('20.13.1')
+    () => doTestNodeVersion('18.16.1'),
+    () => doTestNodeVersion('18.19.0'),
+    () => doTestNodeVersion('20.19.2'),
+    () => doTestNodeVersion('22.16.0'),
+    () => doTestNodeVersion('24.1.0')
   )
 )
 
 export const testAllNodeVersionsInSeries = series(
   cleanTestNodePackedDir,
   () => doTestNodeVersion('16.20.2'),
-  () => doTestNodeVersion('18.18.2'),
-  () => doTestNodeVersion('18.19.1'),
-  () => doTestNodeVersion('20.13.1')
+  () => doTestNodeVersion('18.16.1'),
+  () => doTestNodeVersion('18.19.0'),
+  () => doTestNodeVersion('20.19.2'),
+  () => doTestNodeVersion('22.16.0'),
+  () => doTestNodeVersion('24.1.0')
 )
 
 export async function npmInstallExamples() {

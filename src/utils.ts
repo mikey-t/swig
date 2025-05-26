@@ -83,6 +83,10 @@ export function isNodeLessThan18Dot19(nodeVersion: SimpleVersion): boolean {
   return nodeVersion.major < 18 || (nodeVersion.major === 18 && nodeVersion.minor < 19)
 }
 
+export function isNodeVersionIncompatibleWithTsx(nodeVersion: SimpleVersion): boolean {
+  return nodeVersion.major === 18 && (nodeVersion.minor === 17 || nodeVersion.minor === 18)
+}
+
 export interface SpawnResult {
   code: number
   error?: Error

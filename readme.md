@@ -124,9 +124,13 @@ Node.js versions >= 16 are supported.
 
 Tested Node.js versions:
 - 16.20.2
-- 18.18.2
-- 18.19.1
-- 20.13.1
+- 18.16.1
+- 18.19.0
+- 20.19.2
+- 22.16.0
+- 24.1.0
+
+**Important**: NodeJS and/or tsx has a bug that prevents swig from working with tsx for 18.17.x and 18.18.x versions. If you want to use the tsx variant of swig and have one of those versions, you'll need to either downgrade to 18.16.x (or below) or upgrade to 18.19.x (or above).
 
 ### Optional dependencies
 

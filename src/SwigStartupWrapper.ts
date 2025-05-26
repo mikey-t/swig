@@ -4,7 +4,7 @@ import { spawn } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
 import Swig, { possibleTaskFileNames } from './Swig.js'
-import { SpawnResult, getNodeVersion, getTsxVersion, isNodeLessThan18Dot19, log, logTable, red, trace, yellow } from './utils.js'
+import { SpawnResult, getNodeVersion, getTsxVersion, isNodeLessThan18Dot19, isNodeVersionIncompatibleWithTsx, log, logTable, red, trace, yellow } from './utils.js'
 
 type ProjectType = 'esm' | 'commonjs'
 type SwigfileExtension = 'mjs' | 'cjs' | 'js' | 'ts'
@@ -72,6 +72,11 @@ export default class SwigStartupWrapper {
       const tsxVersion = getTsxVersion()
       let loaderFlag = '--import'
       // NodeJS < 18.19 requires the old "--loader" flag
+      // Important: there's a bug in either NodeJS or tsx that prevents the swigfile import which affects NodeJS versions
+      // greater than 18.16.1 and less than 18.19.0 (exclusive). These versions are not supported with tsx.
+      if (nodeVersion && isNodeVersionIncompatibleWithTsx(nodeVersion)) {
+        this.logWarning(`Tsx does not work with NodeJS 18.17.x and 18.18.x - downgrade to 18.16.1 (or anywhere below that version) or 18.19.0 (or anywhere above that version).`)
+      }
       if (nodeVersion && isNodeLessThan18Dot19(nodeVersion)) {
         loaderFlag = '--loader'
       }

@@ -33,7 +33,7 @@ function _class_call_check(instance, Constructor) {
     }
 }
 function _ts_generator(thisArg, body) {
-    var f, y, t, g, _ = {
+    var f, y, t, _ = {
         label: 0,
         sent: function() {
             if (t[0] & 1) throw t[1];
@@ -41,12 +41,8 @@ function _ts_generator(thisArg, body) {
         },
         trys: [],
         ops: []
-    };
-    return g = {
-        next: verb(0),
-        "throw": verb(1),
-        "return": verb(2)
-    }, typeof Symbol === "function" && (g[Symbol.iterator] = function() {
+    }, g = Object.create((typeof Iterator === "function" ? Iterator : Object).prototype);
+    return g.next = verb(0), g["throw"] = verb(1), g["return"] = verb(2), typeof Symbol === "function" && (g[Symbol.iterator] = function() {
         return this;
     }), g;
     function verb(n) {
@@ -59,7 +55,7 @@ function _ts_generator(thisArg, body) {
     }
     function step(op) {
         if (f) throw new TypeError("Generator is already executing.");
-        while(_)try {
+        while(g && (g = 0, op[0] && (_ = 0)), _)try {
             if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
             if (y = 0, t) op = [
                 op[0] & 2,
@@ -127,113 +123,93 @@ function _ts_generator(thisArg, body) {
         };
     }
 }
-import { parallel, series } from "swig-cli";
+import { parallel, series } from 'swig-cli';
 function task1() {
-    return _task1.apply(this, arguments);
-}
-function _task1() {
-    _task1 = _async_to_generator(function() {
+    return _async_to_generator(function() {
         return _ts_generator(this, function(_state) {
-            console.log("task1 message");
+            console.log('task1 message');
             return [
                 2
             ];
         });
-    });
-    return _task1.apply(this, arguments);
+    })();
 }
 function task2() {
-    return _task2.apply(this, arguments);
-}
-function _task2() {
-    _task2 = _async_to_generator(function() {
+    return _async_to_generator(function() {
         return _ts_generator(this, function(_state) {
-            console.log("task2 message");
+            console.log('task2 message');
             return [
                 2
             ];
         });
-    });
-    return _task2.apply(this, arguments);
+    })();
 }
 function task3() {
-    return _task3.apply(this, arguments);
-}
-function _task3() {
-    _task3 = _async_to_generator(function() {
+    return _async_to_generator(function() {
         return _ts_generator(this, function(_state) {
-            console.log("task3 message");
+            console.log('task3 message');
             return [
                 2
             ];
         });
-    });
-    return _task3.apply(this, arguments);
+    })();
 }
 function task4() {
-    return _task4.apply(this, arguments);
-}
-function _task4() {
-    _task4 = _async_to_generator(function() {
+    return _async_to_generator(function() {
         return _ts_generator(this, function(_state) {
-            console.log("task4 message");
+            console.log('task4 message');
             return [
                 2
             ];
         });
-    });
-    return _task4.apply(this, arguments);
+    })();
 }
 function task5() {
-    return _task5.apply(this, arguments);
-}
-function _task5() {
-    _task5 = _async_to_generator(function() {
+    return _async_to_generator(function() {
         return _ts_generator(this, function(_state) {
-            console.log("task5 message");
+            console.log('task5 message');
             return [
                 2
             ];
         });
-    });
-    return _task5.apply(this, arguments);
+    })();
 }
 export function task6() {
-    return _task6.apply(this, arguments);
-}
-function _task6() {
-    _task6 = _async_to_generator(function() {
+    return _async_to_generator(function() {
         return _ts_generator(this, function(_state) {
-            console.log("task6 message");
+            console.log('task6 message');
             return [
                 2
             ];
         });
-    });
-    return _task6.apply(this, arguments);
+    })();
 }
 export var allSeries = series(task1, task2, task3, task4, task5);
 export var allParallel = parallel(task1, task2, task3, task4, task5);
 export var mixed = series(task1, parallel(task2, task3), task4, task5);
 export var single = task1;
-export var withAnon = series(task1, /*#__PURE__*/ _async_to_generator(function() {
-    return _ts_generator(this, function(_state) {
-        console.log("anonymous task message");
-        return [
-            2
-        ];
-    });
-}));
-export var withNamedAnon = series(task1, [
-    "helloWorld",
-    /*#__PURE__*/ _async_to_generator(function() {
+export var withAnon = series(task1, function() {
+    return _async_to_generator(function() {
         return _ts_generator(this, function(_state) {
-            console.log("named anonymous task helloWorld");
+            console.log('anonymous task message');
             return [
                 2
             ];
         });
-    })
+    })();
+});
+export var withNamedAnon = series(task1, [
+    'helloWorld',
+    function() {
+        return _async_to_generator(function() {
+            return _ts_generator(this, function(_state) {
+                console.log('named anonymous task helloWorld');
+                return [
+                    2
+                ];
+            });
+        })();
+    }
 ]);
 export var nested = series(task1, parallel(series(task2, parallel(task3, task4)), task5));
 export var MyClass = function MyClass() {

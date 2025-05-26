@@ -176,12 +176,12 @@ export default class Swig {
     return `${stringValue} ${unit}`
   }
 
-  private getTaskFilePath(): URL | string | null {
+  private getTaskFilePath(): string | null {
     for (const filename of possibleTaskFileNames) {
       const filePath = path.resolve(this.cwd, filename)
       if (fs.existsSync(filePath)) {
         if (this.isEsm) {
-          return pathToFileURL(filePath)
+          return pathToFileURL(filePath).href
         }
         return filePath
       }
