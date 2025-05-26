@@ -135,8 +135,8 @@ Tested Node.js versions:
 ### Optional dependencies
 
 Known working versions of optional dependencies for typescript variant projects:
-- typescript: 5.3.2
-- [tsx](https://github.com/privatenumber/tsx): 4.6.1
+- typescript: 5.4.5
+- [tsx](https://github.com/privatenumber/tsx): 4.19.4
 - [ts-node](https://github.com/TypeStrong/ts-node): 10.9.2
 
 ## Additional Documentation
