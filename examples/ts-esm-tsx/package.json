@@ -6,7 +6,12 @@
   "author": "Mike Thompson",
   "license": "MIT",
   "devDependencies": {
-    "swig-cli": "file:..\\..\\packed\\swig-cli-1.0.4.tgz",
-    "tsx": "^4.19.4"
+    "swig-cli": "file:..\\..\\packed\\swig-cli-1.0.5-alpha.6.tgz",
+    "tsx": "^4.21.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
   }
 }

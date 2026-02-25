@@ -27,8 +27,8 @@ For general getting started steps, continue below.
   # With npm:
   npm i -g swig-cli@latest
 
-  # OR with volta:
-  volta install swig-cli
+  # OR with pnpm:
+  pnpm add -g swig-cli@latest
   ```
 - Install `swig-cli` package as a dev dependency so you can import `series` and `parallel` in your swigfile:
   ```bash

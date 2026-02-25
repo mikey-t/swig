@@ -10,9 +10,14 @@
   "author": "Mike Thompson",
   "license": "MIT",
   "devDependencies": {
-    "@swc/cli": "^0.3.10",
-    "@swc/core": "^1.4.8",
-    "swig-cli": "file:..\\..\\packed\\swig-cli-1.0.4.tgz",
-    "typescript": "^5.3.2"
+    "@swc/cli": "^0.8.0",
+    "@swc/core": "^1.15.13",
+    "swig-cli": "file:..\\..\\packed\\swig-cli-1.0.5-alpha.6.tgz",
+    "typescript": "^5.9.3"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@swc/core"
+    ]
   }
 }

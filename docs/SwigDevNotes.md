@@ -34,14 +34,17 @@ In addition to providing flexibility, the startup script also accidentally fixed
 
 Setup:
 
+- First ensure global swig version is uninstalled: `pnpm remove -g swig-cli`
+- (optional depending on scenario) Change package.json version to an alpha string. For example, if current version is `1.0.4`, use version string `1.0.5_alpha01`. Increment as needed.
 - In root of project, run (and leave running): `.\swig.ps1 watchEsm`
-- Ensure project references the main directory for swig-cli (if it doesn't already). In example project in another terminal, remove swig-cli and re-add it using the relative location:
-    - `pnpm rm swig-cli`
-    - `pnpm i -D ../../`
+- In example project in another terminal (ts-esm-tsx project recommended), remove swig-cli and re-add it using the relative location:
+  - `pnpm rm swig-cli`
+  - `pnpm i -D ../../`
 
 Clean up:
 - Stop the process running the `watchEsm` task with ctrl + C
 - Clean up all example projects (if references were changed) by running: `.\swig.ps1 updateExamples`
+- Reinstall global swig version: `pnpm add -g swig-cli@latest`
 
 Note that unit tests rely on existence of existing tasks in swigfiles in example projects, so those must remain intact and unmodified (unless unit tests are also updated.)
 

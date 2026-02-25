@@ -1,7 +1,7 @@
 // Swig inception notes (using swig to orchestrate swig project dev tasks):
-// - When developing swig, uninstall global version of swig-cli to avoid possible conflicts or ambiguity: volta uninstall swig-cli
+// - When developing swig, uninstall global version of swig-cli to avoid possible conflicts or ambiguity: pnpm remove -g swig-cli
 // - Call swig with ".\swig.ps1" instead of "npx swig" in order to skip the npx delay (this will use the node_modules version)
-// - After done with swig development, re-install global version of swig-cli: volta install swig-cli@latest
+// - After done with swig development, re-install global version of swig-cli: pnpm add -g swig-cli@latest
 // - Update referenced swig-cli version after new version is published
 
 import { Emoji, SpawnResult, copyDirectoryContents, emptyDirectory, ensureDirectory, getConfirmation, sleep, spawnAsync, spawnAsyncLongRunning, unpackTarball } from '@mikeyt23/node-cli-utils'
@@ -294,7 +294,7 @@ async function cleanPackedDir() {
 }
 
 async function doPack() {
-  await spawnAsync('npm', ['pack', '--pack-destination', 'packed'])
+  await spawnAsync('pnpm', ['pack', '--pack-destination', 'packed'])
 }
 
 async function runInExamples(command: string, args: string[], examples: string[], printOutput = false) {
@@ -355,7 +355,7 @@ async function updateExampleDependencies(examplesToUpdate: string[], usePacked =
   await runInExamples('pnpm', ['i', '-D', ...(usePnpmForceOnSwigInstall ? ['--force'] : []), swigReferencePath], examplesToUpdate.filter(x => !exampleProjectsToSkipNpmInstall.includes(x)))
 
   if (examplesToUpdate.includes(transpiledExampleProject)) {
-    await runInExamples('npm', ['run', 'transpileSwigfile'], [transpiledExampleProject], traceEnabled)
+    await runInExamples('pnpm', ['run', 'transpileSwigfile'], [transpiledExampleProject], traceEnabled)
   }
 }
 

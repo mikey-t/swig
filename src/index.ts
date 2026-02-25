@@ -1,17 +1,17 @@
 import { getSwigInstance } from './singletonManager.js'
-import { isFunction } from './utils.js'
+import { Task, TaskOrNamedTask } from './taskTypes.js'
 
 /**
  * Any function that is async or returns a Promise.
  * See {@link TaskOrNamedTask} for more info.
  */
-export type Task = () => Promise<unknown>
+export type { Task } from './taskTypes.js'
 
 /**
  * A tuple (array with 2 values) of `[string, Task]` that can be used to provide a label for an anonymous function.
  * See {@link TaskOrNamedTask} for more info.
  */
-export type NamedTask = [string, Task]
+export type { NamedTask } from './taskTypes.js'
 
 /**
  * Helper method to determine if something is a function. This is accomplished by returning false if `typeof` is explicitly
@@ -23,14 +23,7 @@ export { isFunction } from './utils.js'
 /**
  * Type guard method for {@link NamedTask}.
  */
-export function isNamedTask(value: unknown): value is NamedTask {
-  return (
-    Array.isArray(value)
-    && value.length === 2
-    && typeof value[0] === 'string'
-    && isFunction(value[1])
-  )
-}
+export { isNamedTask } from './taskTypes.js'
 
 /**
  * ```javascript
@@ -50,7 +43,7 @@ export function isNamedTask(value: unknown): value is NamedTask {
  * )
  * ```
  */
-export type TaskOrNamedTask = Task | NamedTask
+export type { TaskOrNamedTask } from './taskTypes.js'
 
 /**
  * Call a list of async functions that are each a {@link TaskOrNamedTask} (see below) in order, waiting for each to complete before starting the next.
