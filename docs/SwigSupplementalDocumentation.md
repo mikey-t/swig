@@ -146,16 +146,17 @@ UPDATE for tsx: `tsx` will not currently work correctly for all functionality in
 
 ## Recommended Usage
 
-My recommendation is to install `swig-cli` as as global npm package (`npm i -g swig-cli`) because it will run much faster (no initial delay from npm/npx - see below), and you can type less.
+My recommendation is to install `swig-cli` as as global npm package (`pnpm i -g swig-cli`) because it will run much faster (no initial delay from npm/npx - see below), and you can type less.
 
 My opinion is that running stuff through npx and npm aliases is annoying because of the initial delay on each task execution. For me this delay can be anywhere between 1 second and 4-8 seconds for some reason. That's not all that long, but it feels like an eternity when running a task that should only take a few milliseconds. This is why I prefer and recommend using a global install of `swig-cli` so you can call `swig` directly without incurring the startup delay.
 
 ## Using Npx
 
-If you choose not to install `swig-cli` globally (see above) and don't want to use npm aliases (see below), then you will need to prefix all your commands with `npx`:
+If you choose not to install `swig-cli` globally (see above) and don't want to use npm aliases (see below), then you will need to prefix all your commands with `npx` or `pnpm exec`:
 
 ```
 npx swig yourTask
+pnpm exec swig yourTask
 ```
 
 ## Npm Aliases
@@ -192,7 +193,7 @@ npm run test
 npm run swig someOtherTask
 ```
 
-But just to re-iterate, using npm aliases isn't the recommended approach. The idea behind swig is to be able to run `swig` and quickly see all the available commands without even having to open the package.json file or experience the slowness of npm.
+But just to re-iterate, using npm aliases is **not** the recommended approach. The idea behind swig is to be able to run `swig` and quickly see all the available commands without even having to open the package.json file or experience the slowness of npm.
 
 ## Other Commands
 

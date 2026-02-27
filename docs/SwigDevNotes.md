@@ -34,7 +34,7 @@ In addition to providing flexibility, the startup script also accidentally fixed
 
 Setup:
 
-- First ensure global swig version is uninstalled: `pnpm remove -g swig-cli`
+- First ensure global swig version is uninstalled: `pnpm rm -g swig-cli`
 - (optional depending on scenario) Change package.json version to an alpha string. For example, if current version is `1.0.4`, use version string `1.0.5-alpha.1`. Increment as needed.
 - In root of project, run (and leave running): `.\swig.ps1 watchEsm`
   - (optional) An alternate to using `.\swig.ps1` directly is to use a temporary shell alias such as `Set-Alias -Name swig -Value "C:\Users\mikey\src\github\swig\swig.ps1"`
@@ -45,10 +45,10 @@ Setup:
 Clean up:
 - Stop the process running the `watchEsm` task with ctrl + C
 - Clean up all example projects (if references were changed) by running: `.\swig.ps1 updateExamples`
-- Reinstall global swig version: `pnpm add -g swig-cli@latest`
+- Reinstall global swig version: `pnpm i -g swig-cli@latest`
 - (optional) remove shell alias if you used that method
 
-Note that unit tests rely on existence of existing tasks defined in swigfiles within example project directories, so those must remain intact and unmodified (unless unit tests are also updated.)
+Note that unit tests rely on existing tasks defined in swigfiles within example project directories, so those must remain intact and unmodified (unless unit tests are also updated.)
 
 ## Why the CJS version?
 
@@ -61,14 +61,6 @@ swig -> SwigStartupWrapper -> node spawn child process -> Swig.cjs -> imports sw
 So the entry is always ESM, but really it's a combination of ts-node and the cjs version of the script that enables the dynamic typescript file import. There might be other better ways to do this - I'll look into it.
 
 Note that this doesn't apply to tsx, which currently doesn't work well when dynamically importing a commonjs typescript file (main readme points out that the commonjs/typescript mixed esm/cjs syntax scenario needs ts-node over tsx).
-
-## Volta Gotcha with Global Node CLI
-
-I'm using Volta for managing node/npm on my machine - you can ignore this if you don't use Volta.
-
-If you install a new version of `swig-cli` globally with `volta install swig-cli@latest`, it will correctly get the new version and install it, but if you run `swig` with this new version in a directory of a project that has an older version of `swig-cli` installed (so it's swigfile can import `series`/`parallel`), it will use the older version in the project-local node_modules. The volta folks advertise this as intended and the better way to handle global tools, which kinda makes sense I suppose. But it has the potential to be a pain in this particular scenario.
-
-If this ends up being a real problem, I might have to split the executable and the `series`/`parallel` exports to separate packages, or find some other similar solution to keep them more separate. Note that this isn't a problem with just `swig-cli` - this is problem across the board with globally installed npm packages (conflicts between global and project local versions).
 
 ## Explanation of Async Wrappers
 
@@ -104,23 +96,11 @@ This particular issue shined a spotlight on how important the SwigStartupWrapper
 
 ## Pnpm Notes
 
-I've started using [pnpm](https://pnpm.io/installation). It seems to work ok with volta so far, but keep an eye on this (there are a lot of complaints in the volta github issues).
+I've been using [pnpm](https://pnpm.io/installation) for a while now and am happy with it. My current preference for managing it is mise (`mise use -g pnpm`) rather than the corepack version.
 
-Install steps:
-- Add system environment variable: VOLTA_FEATURE_PNPM=1
-- Run `volta install pnpm`
+## Mise Notes
 
-Some advantages of using pnpm:
-
-- Saves disk space (re-uses existing versions of npm packages)
-- Way faster to install or update if the versions of packages involved are already on the machine
-- The speed of install is especially important for my testing of other node versions (rapidly re-install dependencies in many example projects without downloading anything)
-
-Pnpm store location: `%localappdata%\pnpm\store\v3`
-
-The advertisement is that "sym links are used to save space". However, it's a little more involved than that (at least on Windows). There are "regular" symbolic links pointing each package dir in node_modules to a directory with the same name in node_modules/.pnpm, but the files there ... aren't actually there (sort of). They are "hard links" and there's no indicator at all for this in any built-in windows UI, so you'd have to use something like fsutil to actually see that. But essentially the hard link enables many "files" to point to the same actual space on disk, and the space on disk isn't actually deleted until all the "pointers" (files) that are hard linked are deleted.
-
-I originally thought that my shortcuts to access files directly in node_modules would break with pnpm, but pnpm's strategy to mimic the original npm node_modules allows my shortcuts to work normally.
+I previously used Volta to manage NodeJS versions, but it had a few bugs and odd behavior and the maintainers have abandoned the project. After some research I decided to use [mise](https://mise.jdx.dev/getting-started.html). In addition to handling all the basic operations I need, it has a lot of other cool stuff.
 
 ## Swig Inception Notes
 
@@ -135,7 +115,7 @@ Originally I didn't intend to use swig to orchestrate the swig project's own dev
 
 There are 2 "modes" for testing:
 - Direct testing that uses examples directory in this project
-- Testing of specific Node version, accomplished by copying examples to a temp directory, pinning Node version using volta and running using volta shim
+- Testing of specific Node version, accomplished by copying examples to a temp directory and utilizing [mise](#mise-notes) to ensure node versions are installed
 
 Normally the "direct" method can be used while developing, and then the full suite of tests can be run before pushing a new release.
 
@@ -151,11 +131,9 @@ testAllNodeVersions
 
 Pass `skip` to `testNodeVersion` and `testAllNodeVersions` to skip the prep step (copying files, pnpm install, switching of swig-cli reference).
 
-Pass `o` to any of the test commands to only execute tests marked with "only".
+Pass `o` to any of the test commands to only execute tests marked with "only". To mark a test as "only", use this as the second param: `{ only: true }`. See https://nodejs.org/api/test.html#only-tests.
 
-Note that error code 126 is what's being checked for instead of 1 when running the Node version specific tests. This is due to calling volta directly and volta has it's own set of custom return codes (see https://github.com/volta-cli/volta/blob/9beb67be17295aa3da8edef8633f8534d56bed90/crates/volta-core/src/error/mod.rs).
-
-Note that when tests execute, it's tsx with latest project-root Node version, but that these tests are spawning new processes where a different Node version can be used in the case of the Node version specific tests. In these cases volta is called directly (using `volta run node ...`) so that the package.json volta section Node version is respected. You can verify that it's actually using the expected version of Node by adding some logging statements to one of the example project swigfiles (i.e. `console.log(process.version)`), ensure Swig.test.ts variable `logAllTaskResults` is set to `true`, then run `.\swig.ps1 testNodeVersion <node_version_here>`.
+Note that when tests execute, it's tsx with latest project-root Node version, but that these tests are spawning new processes where a different Node version can be used in the case of the Node version specific tests. In these cases the specific version of the node executable is looked up using the mise [where](https://mise.jdx.dev/cli/where.html) command. You can verify that it's actually using the expected version of Node by adding some logging statements to one of the example project swigfiles (i.e. `console.log(process.version)`), ensure Swig.test.ts variable `logAllTaskResults` is set to `true`, then run `.\swig.ps1 testNodeVersion <node_version_here>`.
 
 To test a subset of the example projects, update Swig.test.ts variable `projectsToTestOverride` with the specific projects to test. Be sure to put this back before committing.
 
@@ -177,7 +155,7 @@ The workaround for now is to just re-run whatever the task was. If it persists, 
     - Set alternate swigfile location
     - Suppress warnings from startup checks (such as for dual typescript/non-typescript swigfile where consumer is doing their own transpilation)
 - Testing
-  - Troubleshoot issue with intermittent deletion failure due to file handle on esbuild.exe within node_modules. It's unclear what process is not releasing it's lock on that file fast enough (probably tsx from a previous spawn call?) - it seems to always work on the second try after this error happens. I'll need to create a simpler example method that repeats in a loop for greater chance of repro, then perhaps dynamically log process owner in code since it doesn't stick around long enough to check after the fact. Might also have something to do with pnpm instead of npm and windows hard links. Not my first choice, but I could try adding a delay in before each deletion of any node_modules directory.
+  - Troubleshoot issue with intermittent deletion failure due to file handle on esbuild.exe within node_modules. It's unclear what process is not releasing it's lock on that file fast enough (probably tsx from a previous spawn call?) - it seems to always work on the second try after this error happens. I'll need to create a simpler example method that repeats in a loop for greater chance of repro, then perhaps dynamically log process owner in code since it doesn't stick around long enough to check after the fact. Might also have something to do with pnpm instead of npm and windows hard links.
   - Add additional tests:
     - Tests that verify various error/warning messages for syntax mismatches
     - Tests that verify exported classes are not considered runnable swig tasks (currently there's a bug causing some project/syntax combos to still do this - add some tests while fixing the bug)
@@ -185,17 +163,17 @@ The workaround for now is to just re-run whatever the task was. If it persists, 
 
 ## TODO - address direct node_modules access issue
 
-The new wrapper script makes swig significantly easier to use, but it is using direct paths to local node_modules for both ts-node and swig, which is probably not great for a few reasons. I'd like to look into using a different strategy.
+The new wrapper script makes swig significantly easier to use, but it is using direct paths to local node_modules for both ts-node and swig, which could potentially be an issue for some unknown scenarios. Just in case, I'd like to look into using a different strategy.
 
 Some things to keep in mind that I wouldn't want to lose if I were to switch strategies:
 
-- **Speed**. Calling the scripts directly instead of running through npm/npx is significantly faster.
+- **Speed**. Calling the scripts directly instead of running through npm/npx is **significantly** faster.
 - **Versatility**. The startup script allows for dynamically and automatically adjusting to many or even all variables (node version, swigfile type, project type, etc).
 - **Ease of setup**. No need to add an npm alias or call any additional params to register a transpiler - it just works.
 - **Auto-documentation**.
-    - If the consumer doesn't have tsx or ts-node installed, it will give them a friendly message that it's needed and what command to run
-    - If the consumer is using a global install of swig but forgot to install it in their local project so they can import `series` and `parallel` into their swigfile, it'll give them a friendly message with the necessary command
-    - If they've got a mismatch in their task definition file syntax and the package.json type, it tells them what to change (file extension vs package.json vs task file syntax change)
+  - If the consumer doesn't have tsx or ts-node installed, it will give them a friendly message that it's needed and what command to run
+  - If the consumer is using a global install of swig but forgot to install it in their local project so they can import `series` and `parallel` into their swigfile, it'll give them a friendly message with the necessary command
+  - If they've got a mismatch in their task definition file syntax and the package.json type, it tells them what to change (file extension vs package.json vs task file syntax change)
 
 So, what if the path to swig or ts-node or tsx changes? We can add branching logic in the startup wrapper - that's kind of what it's for anyway - but that could become a maintenance issue over time. Whether I get serious about diverging from this strategy will depend on how often (if ever) ts-node or tsx changes their bin path and whether I want to take the hit of adding additional dependencies or additional custom code to resolve paths instead of hitting them directly.
 
