@@ -13,8 +13,9 @@
   "typescript.format.semicolons": "remove",
   "typescript.tsserver.experimental.enableProjectDiagnostics": true,
   "cSpell.words": [
-    "dynicamlly",
+    "fsutil",
     "howfat",
+    "localappdata",
     "swigfile",
     "swigfiles",
     "TSNODE",

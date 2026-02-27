@@ -1,10 +1,10 @@
 // Swig inception notes (using swig to orchestrate swig project dev tasks):
-// - When developing swig, uninstall global version of swig-cli to avoid possible conflicts or ambiguity: pnpm remove -g swig-cli
-// - Call swig with ".\swig.ps1" instead of "npx swig" in order to skip the npx delay (this will use the node_modules version)
+// - When developing swig, uninstall global version of swig-cli to avoid possible conflicts or ambiguity: pnpm rm -g swig-cli
+// - Call swig with ".\swig.ps1" instead of "npx swig" or "pnpm exec swig" in order to skip the npx delay (this will use the node_modules version)
 // - After done with swig development, re-install global version of swig-cli: pnpm add -g swig-cli@latest
 // - Update referenced swig-cli version after new version is published
 
-import { Emoji, SpawnResult, copyDirectoryContents, emptyDirectory, ensureDirectory, getConfirmation, sleep, spawnAsync, spawnAsyncLongRunning, unpackTarball } from '@mikeyt23/node-cli-utils'
+import { Emoji, SpawnResult, copyDirectoryContents, emptyDirectory, ensureDirectory, getConfirmation, simpleSpawnAsync, sleep, spawnAsync, spawnAsyncLongRunning, unpackTarball } from '@mikeyt23/node-cli-utils'
 import { runParallel } from '@mikeyt23/node-cli-utils/parallel'
 import { log } from 'node:console'
 import fs from 'node:fs'
@@ -28,6 +28,8 @@ const tsconfigCjs = 'tsconfig.cjs.json'
 const npmRegistryArg = '--registry=https://registry.npmjs.org/'
 const deleteNodeModulesSleepMillis = 250 // Sleeps are an attempt to avoid errors deleting esbuild.exe from node_modules
 const deleteNodeModulesRetries = 5
+const usePnpmLoglevelError = true
+const pnpmLoglevelArgs = usePnpmLoglevelError ? ['--loglevel', 'error'] : []
 
 const nodeTestVersions: string[] = [...nodeTestVersionsImmutable]
 type NodeVersion = typeof nodeTestVersionsImmutable[number]
@@ -189,10 +191,11 @@ export async function test(nodeVersion?: NodeVersion) {
 }
 
 // Pass "skip" CLI param to skip temp test dir prep (for faster dev loop when testing specific node version issues)
-export const testNodeVersion = series(cleanTestNodePackedDir, doTestNodeVersion)
+export const testNodeVersion = series(cleanTestNodePackedDir, ensureSwigInVersionTestDir, doTestNodeVersion)
 
 export const testAllNodeVersions = series(
   cleanTestNodePackedDir,
+  ensureSwigInVersionTestDir,
   parallel(
     () => doTestNodeVersion('16.20.2'),
     () => doTestNodeVersion('18.16.1'),
@@ -205,6 +208,7 @@ export const testAllNodeVersions = series(
 
 export const testAllNodeVersionsInSeries = series(
   cleanTestNodePackedDir,
+  ensureSwigInVersionTestDir,
   () => doTestNodeVersion('16.20.2'),
   () => doTestNodeVersion('18.16.1'),
   () => doTestNodeVersion('18.19.0'),
@@ -214,7 +218,7 @@ export const testAllNodeVersionsInSeries = series(
 )
 
 export async function npmInstallExamples() {
-  await runInExamples('pnpm', ['install'], exampleProjects)
+  await runInExamples('pnpm', ['install', ...pnpmLoglevelArgs], exampleProjects)
 }
 
 export async function updateExamples() {
@@ -233,13 +237,15 @@ async function cleanTestNodePackedDir() {
   }
 }
 
-async function doTestNodeVersion(nodeVersionOverride?: NodeVersion) {
+async function ensureSwigInVersionTestDir() {
   if (usePackedForVersionTests) {
     await ensureSwigPackedCopiedToVersionTestDir()
   } else {
     await ensureSwigCopiedToVersionTestDir()
   }
+}
 
+async function doTestNodeVersion(nodeVersionOverride?: NodeVersion) {
   const nodeVersion = nodeVersionOverride || getNodeVersionFromArg()
   log(`- testing node version: ${nodeVersion}`)
   await prepareNodeVersionTest(nodeVersion)
@@ -248,6 +254,8 @@ async function doTestNodeVersion(nodeVersionOverride?: NodeVersion) {
 
 async function prepareNodeVersionTest(nodeVersion: NodeVersion) {
   const versionTestDir = path.join(testTempDir, `node-v${nodeVersion}`)
+  log(`- setting up tests for version ${nodeVersion}`)
+  await ensureNodePath(nodeVersion)
   log(`- setting test directory for examples at ${versionTestDir}`)
   if (argPassed('skip')) {
     log(`${Emoji.Info} Skipping example setup ("skip" param was detected)`)
@@ -278,10 +286,12 @@ async function prepareNodeVersionTest(nodeVersion: NodeVersion) {
       return
     }
     const testExamplePath = path.join(versionTestDir, exampleProject)
-    await spawnAsync('volta', ['pin', `node@${nodeVersion}`], { cwd: testExamplePath })
-    await spawnAsync('pnpm', ['rm', 'swig-cli'], { cwd: testExamplePath, throwOnNonZero: false })
-    await spawnAsync('pnpm', ['i', '-D', ...(usePnpmForceOnSwigInstall ? ['--force'] : []), swigCliReferencePath], { cwd: testExamplePath })
-    await spawnAsync('pnpm', ['install'], { cwd: testExamplePath })
+    log(`- pnpm remove swig-cli for version ${nodeVersion} in example project ${exampleProject}`)
+    await spawnAsync('pnpm', ['rm', 'swig-cli', ...pnpmLoglevelArgs], { cwd: testExamplePath, throwOnNonZero: false })
+    log(`- pnpm install swig-cli for version ${nodeVersion} in example project ${exampleProject}`)
+    await spawnAsync('pnpm', ['install', '-D', ...(usePnpmForceOnSwigInstall ? ['--force'] : []), ...pnpmLoglevelArgs, swigCliReferencePath], { cwd: testExamplePath })
+    log(`- run pnpm install in directory for version ${nodeVersion} in example project ${exampleProject}`)
+    await spawnAsync('pnpm', ['install', ...pnpmLoglevelArgs], { cwd: testExamplePath })
   }, () => true)
 }
 
@@ -411,9 +421,6 @@ async function ensureSwigCopiedToVersionTestDir() {
 }
 
 async function ensureSwigPackedCopiedToVersionTestDir() {
-  if (tempDirPackedSwigCliPath) {
-    return
-  }
   const packedTarballName = await getPackedTarballName()
   tempDirPackedSwigCliPath = path.join(testTempPackedDir, await getPackedTarballName())
   await ensureDirectory(testTempPackedDir)
@@ -457,4 +464,36 @@ async function doRollup(configFile: string, watch = false) {
 async function copyCjsPackageJsonToDist() {
   const packageJson = await fsp.readFile('./package.cjs.json', { encoding: 'utf8' })
   await fsp.writeFile('./dist/cjs/package.json', packageJson, { encoding: 'utf8' })
+}
+
+async function ensureNodePath(version: string) {
+  const nodeInstallVersionString = `node@${version}`
+  log(`ensuring node ${version} is installed using command 'mise install ${nodeInstallVersionString}`)
+  const installResult = await spawnAsync('mise', ['install', nodeInstallVersionString, '-q'])
+  if (installResult.code !== 0) {
+    throw new Error(`Failed to install ${nodeInstallVersionString}`)
+  }
+  log(`getting path to node executable for ${nodeInstallVersionString}`)
+  const whereResult = await simpleSpawnAsync('mise', ['where', nodeInstallVersionString])
+  if (whereResult.code !== 0) {
+    throw new Error(`Failed to get node path for ${nodeInstallVersionString}`)
+  }
+  if (whereResult.stdoutLines.length > 1) {
+    throw new Error(`Unexpected result getting node path for ${nodeInstallVersionString}. Command returned multiple lines: ${whereResult.stdoutLines.join(', ')}`)
+  }
+  if (whereResult.stdoutLines.length === 0) {
+    throw new Error(`Failed to get path for ${nodeInstallVersionString}`)
+  }
+  const nodePath = path.join(whereResult.stdoutLines[0], 'node')
+  log(`node path found: ${nodePath}`)
+  return nodePath
+}
+
+export async function miseTest() {
+  log('running new ensureNodePath method...\n')
+  const nodePath = await ensureNodePath('20.19.2')
+  log(`path: ${nodePath}`)
+  log(`\nGetting output of "node -v" using path`)
+  const nodeVersionResult = await simpleSpawnAsync(nodePath, ['-v'])
+  log(nodeVersionResult)
 }

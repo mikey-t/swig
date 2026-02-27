@@ -35,8 +35,9 @@ In addition to providing flexibility, the startup script also accidentally fixed
 Setup:
 
 - First ensure global swig version is uninstalled: `pnpm remove -g swig-cli`
-- (optional depending on scenario) Change package.json version to an alpha string. For example, if current version is `1.0.4`, use version string `1.0.5_alpha01`. Increment as needed.
+- (optional depending on scenario) Change package.json version to an alpha string. For example, if current version is `1.0.4`, use version string `1.0.5-alpha.1`. Increment as needed.
 - In root of project, run (and leave running): `.\swig.ps1 watchEsm`
+  - (optional) An alternate to using `.\swig.ps1` directly is to use a temporary shell alias such as `Set-Alias -Name swig -Value "C:\Users\mikey\src\github\swig\swig.ps1"`
 - In example project in another terminal (ts-esm-tsx project recommended), remove swig-cli and re-add it using the relative location:
   - `pnpm rm swig-cli`
   - `pnpm i -D ../../`
@@ -45,8 +46,9 @@ Clean up:
 - Stop the process running the `watchEsm` task with ctrl + C
 - Clean up all example projects (if references were changed) by running: `.\swig.ps1 updateExamples`
 - Reinstall global swig version: `pnpm add -g swig-cli@latest`
+- (optional) remove shell alias if you used that method
 
-Note that unit tests rely on existence of existing tasks in swigfiles in example projects, so those must remain intact and unmodified (unless unit tests are also updated.)
+Note that unit tests rely on existence of existing tasks defined in swigfiles within example project directories, so those must remain intact and unmodified (unless unit tests are also updated.)
 
 ## Why the CJS version?
 
@@ -58,7 +60,7 @@ swig -> SwigStartupWrapper -> node spawn child process -> Swig.cjs -> imports sw
 
 So the entry is always ESM, but really it's a combination of ts-node and the cjs version of the script that enables the dynamic typescript file import. There might be other better ways to do this - I'll look into it.
 
-Note that this doesn't apply to tsx, which currently doesn't work well when dynicamlly importing a commonjs typescript file (main readme points out that the commonjs/typescript mixed esm/cjs syntax scenario needs ts-node over tsx).
+Note that this doesn't apply to tsx, which currently doesn't work well when dynamically importing a commonjs typescript file (main readme points out that the commonjs/typescript mixed esm/cjs syntax scenario needs ts-node over tsx).
 
 ## Volta Gotcha with Global Node CLI
 
@@ -124,9 +126,10 @@ I originally thought that my shortcuts to access files directly in node_modules 
 
 Originally I didn't intend to use swig to orchestrate the swig project's own dev tasks. I thought I would possibly run into strange issues with version ambiguity or other conflicts. However, now that swig is more stable, I've migrated from using npm scripts and the loose `tasks` file to using a "live" version of swig (referencing node_modules directly). To ensure there are as few issues as possible, this is how I plan on using this scenario:
 
-- When developing swig, uninstall global version of swig-cli to avoid possible conflicts or ambiguity: volta uninstall swig-cli
-- Call swig with ".\swig.ps1" instead of "npx swig" in order to skip the npx delay
-- After done, re-install global version of swig-cli: volta install swig-cli@latest
+- When developing swig, uninstall global version of swig-cli to avoid possible conflicts or ambiguity: `pnpm rm -g swig-cli`
+- Call swig with ".\swig.ps1" instead of "npx swig" or "pnpm exec swig" in order to skip the npx delay and the extra typing
+  - Optionally, use a temporary shell profile alias, for a powershell example: `Set-Alias -Name swig -Value "C:\Users\mikey\src\github\swig\swig.ps1"`. ⚠️ Don't forget to remove it when a new global version is reinstalled
+- After done, re-install global version of swig-cli: `pnpm i -g swig-cli@latest`
 
 ## Testing Notes
 

@@ -190,7 +190,7 @@ packages:
     resolution: {integrity: sha512-seS2Tj26TBVOC2NIc2rOe2y2ZO7efxITtLZcGSOnHHNOQ7CkiUBfw0Iw2ck6xkIhPwLhKNLS8BO+hEpngQlqzw==}
 
   swig-cli@file:../../packed/swig-cli-1.0.5-alpha.6.tgz:
-    resolution: {integrity: sha512-mTiWtpSuXIPc4djz/otslkq+44RV+MyPFzfFeK8h2+K6T1saj9lkvyhNWvl9yGbAnbS3zRqijLCgZKB90HabKA==, tarball: file:../../packed/swig-cli-1.0.5-alpha.6.tgz}
+    resolution: {integrity: sha512-50yuJkgLefFU+Mr81/Dic30CGjJvxhIjCjZqVnACJcXIyPsngmsvEzWqYOnN7oIGeUfxCJ/ldfdUGwn78PrIwA==, tarball: file:../../packed/swig-cli-1.0.5-alpha.6.tgz}
     version: 1.0.5-alpha.6
     hasBin: true
 

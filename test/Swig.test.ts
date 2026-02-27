@@ -1,4 +1,5 @@
-import { SimpleSpawnResult, log, simpleSpawnAsync } from '@mikeyt23/node-cli-utils'
+// Temporarily add to second test param for "only" tests: { only: true }
+import { SimpleSpawnResult, log, simpleSpawnAsync, simpleSpawnSync } from '@mikeyt23/node-cli-utils'
 import assert from 'node:assert'
 import fs from 'node:fs'
 import path from 'node:path'
@@ -44,7 +45,13 @@ const nodeVersionMessage = nodeVersion
   : `current version directly in examples directory (${process.version})`
 log(`node version to test: ${nodeVersionMessage}`)
 
-const swigRelativePath = 'node_modules/swig-cli/dist/SwigStartupWrapper.js'
+const nodeVersionedPath = getNodePath(nodeVersion)
+if (nodeVersion !== undefined) {
+  log(`swig.test.ts current process node path: ${process.execPath}`)
+  log(`using node path to spawn in tests: ${nodeVersionedPath}`)
+}
+
+const swigStartupScriptRelativePath = 'node_modules/swig-cli/dist/SwigStartupWrapper.js'
 
 // Use the installation of swig-cli from the ts-esm-tsx example project for the cases where swig isn't installed
 const tsEsmTsxSwigStartupWrapperRelativePath = '../ts-esm-tsx/node_modules/swig-cli/dist/SwigStartupWrapper.js'
@@ -57,8 +64,7 @@ const getAdjustedExampleDir = (exampleDirName: string) => {
     : path.join(examplesDir, exampleDirName)
 }
 
-// This is the volta error code for failed execution (instead of the normal "1" that would occur if running node directly)
-const expectedErrorCode = 126
+const expectedErrorCode = 1
 
 const exampleProjectsToTest = projectsToTestOverride.length > 0 ? projectsToTestOverride : exampleProjects
 
@@ -84,8 +90,8 @@ let numAsserts = 0
 
 for (const exampleProject of exampleProjectsToTest) {
   describe(`basic tests for example project ${exampleProject}`, () => {
-    const examplePath = path.join(examplesDir, exampleProject)
-    const swigStartupWrapperPath = path.join(examplePath, swigRelativePath)
+    const examplePath = getAdjustedExampleDir(exampleProject)
+    const swigStartupWrapperPath = path.join(examplePath, swigStartupScriptRelativePath)
 
     test('example project exists and is ready to test', async () => {
       if (!fs.existsSync(examplePath)) {
@@ -207,7 +213,7 @@ describe('no-swig-cli-installed', () => {
 
 describe('no-swigfile', () => {
   it('throws an error if there is no swigfile', async () => {
-    const result = await getTaskResultSpecial('no-swigfile', swigRelativePath)
+    const result = await getTaskResultSpecial('no-swigfile', swigStartupScriptRelativePath)
     assert.strictEqual(result.code, expectedErrorCode)
     assert.match(result.stderr, /Task file not found - must be one of the following: swigfile.cjs, swigfile.mjs, swigfile.js, swigfile.ts/)
     numAsserts++
@@ -225,15 +231,16 @@ describe('no-ts-node', () => {
 
 const getTaskResult = async (exampleProjectName: string, swigStartupWrapperPath: string, taskName?: string): Promise<SimpleSpawnResult> => {
   const exampleDirPath = getAdjustedExampleDir(exampleProjectName)
-  const result = await simpleSpawnAsync('volta', ['run', 'node', swigStartupWrapperPath, ...(taskName ? [taskName] : [])], { cwd: exampleDirPath, throwOnNonZero: false })
+  const result = await simpleSpawnAsync(nodeVersionedPath, [swigStartupWrapperPath, ...(taskName ? [taskName] : [])], { cwd: exampleDirPath, throwOnNonZero: false })
   if (logAllTaskResults) {
     log(result)
   }
   return result
 }
 
+// "Special" because it's borrowing installed copy of swig from another example project when testing projects that don't have swig
 const getTaskResultSpecial = async (exampleName: string, swigPath: string = tsEsmTsxSwigStartupWrapperRelativePath) => {
-  const result = await simpleSpawnAsync('volta', ['run', 'node', swigPath], { cwd: getAdjustedExampleDir(exampleName), throwOnNonZero: false })
+  const result = await simpleSpawnAsync(nodeVersionedPath, [swigPath], { cwd: getAdjustedExampleDir(exampleName), throwOnNonZero: false })
   if (logAllTaskResults) {
     log(result)
   }
@@ -262,4 +269,22 @@ after(() => {
 
 function isNodeVersion(str: unknown): str is NodeVersion {
   return !!str && typeof str === 'string' && nodeTestVersions.includes(str)
+}
+
+function getNodePath(version: string | undefined): string {
+  if (version === undefined) {
+    return 'node'
+  }
+  const nodeInstallVersionString = `node@${version}`
+  const whereResult = simpleSpawnSync('mise', ['where', nodeInstallVersionString])
+  if (whereResult.code !== 0) {
+    throw new Error(`Failed to get node path for ${nodeInstallVersionString}`)
+  }
+  if (whereResult.stdoutLines.length > 1) {
+    throw new Error(`Unexpected result getting node path for ${nodeInstallVersionString}. Command returned multiple lines: ${whereResult.stdoutLines.join(', ')}`)
+  }
+  if (whereResult.stdoutLines.length === 0) {
+    throw new Error(`Failed to get path for ${nodeInstallVersionString}`)
+  }
+  return path.join(whereResult.stdoutLines[0], 'node')
 }
