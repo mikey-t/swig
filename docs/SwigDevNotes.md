@@ -127,7 +127,11 @@ testNodeVersion <node_version> // See swigfile.ts -> nodeTestVersionsImmutable
 testAllNodeVersions
 ```
 
-**Reminder**: when running any variant of testing node versions, use an admin terminal to prevent access denied issues when setting up and copying files to the temp directory.
+**Important**: Windows defender will cause issues file handles unless you add an exclusion to the swig-test directory that is being copied into (or alternatively, you can run the tests in an admin terminal). Windows Security -> Virus & threat protection -> Manage settings under "Virus & threat protection settings" -> Add or remove exclusions. If you don't add the exclusion you'll sometimes get an error like this:
+
+```text
+ERR_PNPM_EPERM  EPERM: operation not permitted, unlink 'C:\temp\swig-test\node-v24.1.0\ts-esm-tsx\node_modules\.pnpm\@esbuild+win32-x64@0.27.3\node_modules\@esbuild\win32-x64\esbuild.exe'
+```
 
 Pass `skip` to `testNodeVersion` and `testAllNodeVersions` to skip the prep step (copying files, pnpm install, switching of swig-cli reference).
 
@@ -141,12 +145,6 @@ To test a subset of the example projects, update Swig.test.ts variable `projects
 
 Keep in mind that pnpm will not pull in an updated version without the `--force` flag, which I'm using in the swigfile tasks that remove and re-add the swig-cli dependency in example/test projects. I could alternatively use a strategy where after a change I bump a package.json suffix like `-alpha<number>` and re-test. However, the pnpm `--force` options seems to be good enough for my use case.
 
-## Errors Deleting node_modules
-
-I started getting intermittent errors when running any swig task that needs to delete a node_modules directory. It's complaining about a file handle on `esbuild.exe`. It's unclear why this so frequently has a lingering handle that prevents deletion. I tried adding a couple sleeps around node_modules deletion in addition to setting the `maxRetries` to 5, but it still happens.
-
-The workaround for now is to just re-run whatever the task was. If it persists, I've found that the most likely culprit is vscode, so closing that seems to free up whatever the handle is. There's a TODO item below to investigate this.
-
 ## TODO
 
 - Determine if there's a better alternative to accessing node_modules directly (see section below)
@@ -155,7 +153,6 @@ The workaround for now is to just re-run whatever the task was. If it persists, 
     - Set alternate swigfile location
     - Suppress warnings from startup checks (such as for dual typescript/non-typescript swigfile where consumer is doing their own transpilation)
 - Testing
-  - Troubleshoot issue with intermittent deletion failure due to file handle on esbuild.exe within node_modules. It's unclear what process is not releasing it's lock on that file fast enough (probably tsx from a previous spawn call?) - it seems to always work on the second try after this error happens. I'll need to create a simpler example method that repeats in a loop for greater chance of repro, then perhaps dynamically log process owner in code since it doesn't stick around long enough to check after the fact. Might also have something to do with pnpm instead of npm and windows hard links.
   - Add additional tests:
     - Tests that verify various error/warning messages for syntax mismatches
     - Tests that verify exported classes are not considered runnable swig tasks (currently there's a bug causing some project/syntax combos to still do this - add some tests while fixing the bug)
