@@ -9,8 +9,8 @@ importers:
   .:
     devDependencies:
       swig-cli:
-        specifier: file:..\..\packed\swig-cli-1.0.5-alpha.6.tgz
-        version: file:../../packed/swig-cli-1.0.5-alpha.6.tgz
+        specifier: file:..\..\packed\swig-cli-1.0.5.tgz
+        version: file:../../packed/swig-cli-1.0.5.tgz
       ts-node:
         specifier: ^10.9.2
         version: 10.9.2(@types/node@22.15.21)(typescript@5.9.3)
@@ -71,9 +71,9 @@ packages:
   make-error@1.3.6:
     resolution: {integrity: sha512-s8UhlNe7vPKomQhC1qFelMokr/Sc3AgNbso3n74mVPA5LTZwkB9NlXf4XPamLxJE8h0gh73rM94xvwRT2CVInw==}
 
-  swig-cli@file:../../packed/swig-cli-1.0.5-alpha.6.tgz:
-    resolution: {integrity: sha512-mTiWtpSuXIPc4djz/otslkq+44RV+MyPFzfFeK8h2+K6T1saj9lkvyhNWvl9yGbAnbS3zRqijLCgZKB90HabKA==, tarball: file:../../packed/swig-cli-1.0.5-alpha.6.tgz}
-    version: 1.0.5-alpha.6
+  swig-cli@file:../../packed/swig-cli-1.0.5.tgz:
+    resolution: {integrity: sha512-ixmlie8PLGPna02mQ9fHl/gsfb+J9W0MMQZjh+FkP1iuaRd4oSDa6U/SL8kd4CQsbHsuRuul2uq2apiDITJfGw==, tarball: file:../../packed/swig-cli-1.0.5.tgz}
+    version: 1.0.5
     hasBin: true
 
   ts-node@10.9.2:
@@ -146,7 +146,7 @@ snapshots:
 
   make-error@1.3.6: {}
 
-  swig-cli@file:../../packed/swig-cli-1.0.5-alpha.6.tgz: {}
+  swig-cli@file:../../packed/swig-cli-1.0.5.tgz: {}
 
   ts-node@10.9.2(@types/node@22.15.21)(typescript@5.9.3):
     dependencies:

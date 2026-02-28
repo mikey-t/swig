@@ -127,7 +127,7 @@ testNodeVersion <node_version> // See swigfile.ts -> nodeTestVersionsImmutable
 testAllNodeVersions
 ```
 
-**Important**: Windows defender will cause issues file handles unless you add an exclusion to the swig-test directory that is being copied into (or alternatively, you can run the tests in an admin terminal). Windows Security -> Virus & threat protection -> Manage settings under "Virus & threat protection settings" -> Add or remove exclusions. If you don't add the exclusion you'll sometimes get an error like this:
+**Important**: Windows defender will cause issues with file handles unless you add an exclusion to this project's examples directory and the swig-test directory that is being copied into for version tests (or alternatively, you can run in an admin terminal). Windows Security -> Virus & threat protection -> Manage settings under "Virus & threat protection settings" -> Add or remove exclusions. If you don't add the exclusion you'll sometimes get an error like this:
 
 ```text
 ERR_PNPM_EPERM  EPERM: operation not permitted, unlink 'C:\temp\swig-test\node-v24.1.0\ts-esm-tsx\node_modules\.pnpm\@esbuild+win32-x64@0.27.3\node_modules\@esbuild\win32-x64\esbuild.exe'

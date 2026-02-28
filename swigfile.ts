@@ -360,9 +360,9 @@ async function updateExampleDependencies(examplesToUpdate: string[], usePacked =
     log('- updating example projects with parent directory reference for swig-cli dependency')
   }
 
-  await runInExamples('pnpm', ['rm', 'swig-cli'], examplesToUpdate.filter(x => !exampleProjectsToSkipNpmInstall.includes(x)))
+  await runInExamples('pnpm', ['rm', 'swig-cli', ...pnpmLoglevelArgs], examplesToUpdate.filter(x => !exampleProjectsToSkipNpmInstall.includes(x)))
 
-  await runInExamples('pnpm', ['i', '-D', ...(usePnpmForceOnSwigInstall ? ['--force'] : []), swigReferencePath], examplesToUpdate.filter(x => !exampleProjectsToSkipNpmInstall.includes(x)))
+  await runInExamples('pnpm', ['i', '-D', ...(usePnpmForceOnSwigInstall ? ['--force'] : []), ...pnpmLoglevelArgs, swigReferencePath], examplesToUpdate.filter(x => !exampleProjectsToSkipNpmInstall.includes(x)))
 
   if (examplesToUpdate.includes(transpiledExampleProject)) {
     await runInExamples('pnpm', ['run', 'transpileSwigfile'], [transpiledExampleProject], traceEnabled)

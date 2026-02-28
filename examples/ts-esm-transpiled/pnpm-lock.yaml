@@ -15,8 +15,8 @@ importers:
         specifier: ^1.15.13
         version: 1.15.13
       swig-cli:
-        specifier: file:..\..\packed\swig-cli-1.0.5-alpha.6.tgz
-        version: file:../../packed/swig-cli-1.0.5-alpha.6.tgz
+        specifier: file:..\..\packed\swig-cli-1.0.5.tgz
+        version: file:../../packed/swig-cli-1.0.5.tgz
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
@@ -607,9 +607,9 @@ packages:
     resolution: {integrity: sha512-KIy5nylvC5le1OdaaoCJ07L+8iQzJHGH6pWDuzS+d07Cu7n1MZ2x26P8ZKIWfbK02+XIL8Mp4RkWeqdUCrDMfg==}
     engines: {node: '>=18'}
 
-  swig-cli@file:../../packed/swig-cli-1.0.5-alpha.6.tgz:
-    resolution: {integrity: sha512-mTiWtpSuXIPc4djz/otslkq+44RV+MyPFzfFeK8h2+K6T1saj9lkvyhNWvl9yGbAnbS3zRqijLCgZKB90HabKA==, tarball: file:../../packed/swig-cli-1.0.5-alpha.6.tgz}
-    version: 1.0.5-alpha.6
+  swig-cli@file:../../packed/swig-cli-1.0.5.tgz:
+    resolution: {integrity: sha512-ixmlie8PLGPna02mQ9fHl/gsfb+J9W0MMQZjh+FkP1iuaRd4oSDa6U/SL8kd4CQsbHsuRuul2uq2apiDITJfGw==, tarball: file:../../packed/swig-cli-1.0.5.tgz}
+    version: 1.0.5
     hasBin: true
 
   tar-stream@3.1.7:
@@ -1183,7 +1183,7 @@ snapshots:
     dependencies:
       '@tokenizer/token': 0.3.0
 
-  swig-cli@file:../../packed/swig-cli-1.0.5-alpha.6.tgz: {}
+  swig-cli@file:../../packed/swig-cli-1.0.5.tgz: {}
 
   tar-stream@3.1.7:
     dependencies:

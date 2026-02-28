@@ -1,10 +1,10 @@
 {
   "name": "swig-cli",
-  "version": "1.0.5-alpha.6",
+  "version": "1.0.5",
   "description": "Swig is a simple CLI tool for automating dev workflows via compositions of series and parallel tasks.",
   "repository": {
     "type": "git",
-    "url": "https://github.com/mikey-t/swig"
+    "url": "git+https://github.com/mikey-t/swig.git"
   },
   "type": "module",
   "exports": {
@@ -51,7 +51,8 @@
   "devEngines": {
     "packageManager": {
       "name": "pnpm",
-      "version": "^10.30.3"
+      "version": "^10.30.3",
+      "onFail": "ignore"
     },
     "runtime": {
       "name": "node",

@@ -12,7 +12,7 @@
   "devDependencies": {
     "@swc/cli": "^0.8.0",
     "@swc/core": "^1.15.13",
-    "swig-cli": "file:..\\..\\packed\\swig-cli-1.0.5-alpha.6.tgz",
+    "swig-cli": "file:..\\..\\packed\\swig-cli-1.0.5.tgz",
     "typescript": "^5.9.3"
   },
   "pnpm": {
