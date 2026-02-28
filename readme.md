@@ -27,8 +27,8 @@ For general getting started steps, continue below.
   # With npm:
   npm i -g swig-cli@latest
 
-  # OR with volta:
-  volta install swig-cli
+  # OR with pnpm:
+  pnpm i -g swig-cli@latest
   ```
 - Install `swig-cli` package as a dev dependency so you can import `series` and `parallel` in your swigfile:
   ```bash
@@ -44,6 +44,9 @@ For general getting started steps, continue below.
 
   # OR local swig-cli install
   npx swig
+  
+  # OR local swig-cli install with pnpm
+  pnpm exec swig
   ```
 - Run a task:
   ```bash
@@ -52,6 +55,9 @@ For general getting started steps, continue below.
 
   # OR local swig-cli install
   npx swig yourTask
+  
+  # OR local swig-cli install with pnpm
+  pnpm exec swig yourTask
   ```
 
 ## Swigfile Syntax Options Matrix
@@ -76,7 +82,7 @@ If there are multiple swigfiles in your project directory, swig will use the fir
 
 If using typescript:
 
-- You must install either `tsx` or `ts-node` as a dev dependency in your project. These are Node typescript loaders that allow immediate execution of typescript without a transpilation step. Note that `tsx` ESM functionality is advertised as being experimental, but it seems to work well, and also seems to have fewer issues than `ts-node`, and is much faster. You can install one of these by running `npm i -D tsx` OR `npm i -D ts-node`.
+- You must install either `tsx` or `ts-node` as a dev dependency in your project. These are Node typescript loaders that allow immediate execution of typescript without a transpilation step. Note that `tsx` seems to have fewer issues than `ts-node`, and is much faster. You can install one of these by running `npm i -D tsx` OR `npm i -D ts-node`.
 - In a typescript project where the package.json is set to CommonJS, you will need to use `ts-node` and NOT `tsx`
 - Your `tsconfig.json` needs to have settings that match your `package.json` type. For example, if you have your `package.json` type field set to `module`, then your `tsconfig.json` needs to have a `module` setting of "ES2020" or "ESNext" (something that supports ESM). See [Swig Typescript Quick Start](./docs/SwigTypescriptQuickStart.md) for an example `tsconfig.json` file.
 - If using `ts-node`, speed up execution time by configuring it to skip type checking (this is only required for NodeJS version 18.19 and above):
@@ -110,6 +116,9 @@ swig build
 
 // OR local swig-cli install
 npx swig build
+
+// OR local swig-cli install with pnpm
+pnpm exec swig build
 ```
 
 ## Example Projects
@@ -134,9 +143,9 @@ Tested Node.js versions:
 
 ### Optional dependencies
 
-Known working versions of optional dependencies for typescript variant projects:
-- typescript: 5.4.5
-- [tsx](https://github.com/privatenumber/tsx): 4.19.4
+Latest known working versions of optional dependencies for typescript variant projects:
+- typescript: 5.9.3
+- [tsx](https://github.com/privatenumber/tsx): 4.21.0
 - [ts-node](https://github.com/TypeStrong/ts-node): 10.9.2
 
 ## Additional Documentation

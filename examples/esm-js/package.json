@@ -6,6 +6,6 @@
   "author": "Mike Thompson",
   "license": "MIT",
   "devDependencies": {
-    "swig-cli": "file:..\\..\\packed\\swig-cli-1.0.4.tgz"
+    "swig-cli": "file:..\\..\\packed\\swig-cli-1.0.5.tgz"
   }
 }

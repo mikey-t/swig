@@ -8,7 +8,7 @@ import fs from 'node:fs'
 
 const tsconfigCjs = 'tsconfig.cjs.json'
 const version = JSON.parse(fs.readFileSync('package.json', 'utf8')).version
-const replaceOptions = { '__VERSION__': version, preventAssignment: true }
+const replaceOptions = { preventAssignment: true, values: { '__VERSION__': version } }
 const doNotMangleSymbols = ['series', 'innerSeries', 'parallel', 'innerParallel']
 
 export default [
@@ -22,14 +22,14 @@ export default [
     },
     plugins: [
       typescript({ tsconfig: tsconfigCjs, declaration: true, declarationMap: true, module: 'esnext' }),
+      replace(replaceOptions),
       nodeResolve(),
       commonjs(),
       terser({
         mangle: {
           reserved: doNotMangleSymbols
         }
-      }),
-      replace(replaceOptions)
+      })
     ]
   },
   // CommonJS CLI

@@ -7,7 +7,7 @@ import fs from 'node:fs'
 
 const tsconfigEsm = 'tsconfig.esm.json'
 const version = JSON.parse(fs.readFileSync('package.json', 'utf8')).version
-const replaceOptions = { '__VERSION__': version, preventAssignment: true }
+const replaceOptions = { preventAssignment: true, values: { '__VERSION__': version } }
 const doNotMangleSymbols = ['series', 'innerSeries', 'parallel', 'innerParallel']
 
 export default [
@@ -15,57 +15,60 @@ export default [
   {
     input: 'src/index.ts',
     output: {
-      file: 'dist/esm/index.js',
+      // file: 'dist/esm/index.js',
+      dir: 'dist/esm',
       format: 'esm',
       sourcemap: 'inline'
     },
     plugins: [
       typescript({ tsconfig: tsconfigEsm, declaration: true, declarationMap: true }),
+      replace(replaceOptions),
       nodeResolve(),
       terser({
         mangle: {
           reserved: doNotMangleSymbols
         }
-      }),
-      replace(replaceOptions)
+      })
     ]
   },
   // ESM CLI
   {
     input: 'src/swigCli.ts',
     output: {
-      file: 'dist/esm/swigCli.js',
+      // file: 'dist/esm/swigCli.js',
+      dir: 'dist/esm/',
       format: 'esm',
       sourcemap: 'inline'
     },
     plugins: [
       typescript({ tsconfig: tsconfigEsm }),
+      replace(replaceOptions),
       nodeResolve(),
       terser({
         mangle: {
           reserved: doNotMangleSymbols
         }
-      }),
-      replace(replaceOptions)
+      })
     ]
   },
   // ESM CLI startup script
   {
     input: 'src/SwigStartupWrapper.ts',
     output: {
-      file: 'dist/SwigStartupWrapper.js',
+      // file: 'dist/SwigStartupWrapper.js',
+      dir: 'dist/',
       format: 'esm',
       sourcemap: 'inline'
     },
     plugins: [
       typescript({ tsconfig: tsconfigEsm }),
+      replace(replaceOptions),
       nodeResolve(),
       terser({
         mangle: {
           reserved: doNotMangleSymbols
         }
-      }),
-      replace(replaceOptions)
+      })
     ]
   }
 ]

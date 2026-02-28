@@ -1,7 +1,7 @@
 import fs from 'node:fs'
 import * as path from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { Task, TaskOrNamedTask, isNamedTask } from './index.js'
+import { Task, TaskOrNamedTask, isNamedTask } from './taskTypes.js'
 import { AnsiColor, color, cyan, gray, green, isFunction, log, purple, red, yellow } from './utils.js'
 
 const showModeInStartMessage = false

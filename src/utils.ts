@@ -6,7 +6,6 @@ export function log(message?: unknown, ...optionalParams: unknown[]) {
   console.log(message, ...optionalParams)
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function trace(message?: unknown, ...optionalParams: unknown[]) {
   if (traceEnabled) {
     console.log(message, ...optionalParams)

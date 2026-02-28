@@ -66,7 +66,9 @@ export default class SwigStartupWrapper {
     const nodeVersion = getNodeVersion()
     trace(`NodeJS version: ${nodeVersion?.raw}`)
 
-    const command = 'node'
+    // Use full path rather than just 'node' to avoid use of an unexpected version
+    const command = process.execPath
+    
     let spawnArgs = [swigScript, ...preservedArgs]
     if (isTypescript && this.hasTsx) {
       const tsxVersion = getTsxVersion()
