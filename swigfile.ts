@@ -76,10 +76,8 @@ export async function lint() {
 
 export const build = series(
   cleanDist,
-  parallel(
-    ['rollupEsm', () => doRollup(rollupConfigEsm)],
-    ['rollupCjs', () => doRollup('rollup.config.cjs.js')]
-  ),
+  ['rollupEsm', () => doRollup(rollupConfigEsm)],
+  ['rollupCjs', () => doRollup('rollup.config.cjs.js')],
   parallel(
     removeUnnecessaryDistFiles,
     copyCjsPackageJsonToDist
