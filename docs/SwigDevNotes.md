@@ -50,6 +50,17 @@ Clean up:
 
 Note that unit tests rely on existing tasks defined in swigfiles within example project directories, so those must remain intact and unmodified (unless unit tests are also updated.)
 
+## Global vs Local Install
+
+Potential issues to be aware of with different global vs locally installed swig versions:
+
+- Global swig will be called initially because it's in the PATH, but it's startup wrapper will call local swig via relative path: './node_modules/swig-cli/dist/esm/swigCli.js'
+- If path to swigCli.js in the dist folder is changed, it would require global and local versions to match
+
+It seems like reasonable behavior to prefer local version while still taking advantage of global wrapper script functionality/availability. These particular scenarios aren't too bad - if the path to swigCli didn't change between versions there will most likely be not problem at all. If that path does change, a relatively straight forward error will occur when it can't find the local script, for example: "Error [ERR_MODULE_NOT_FOUND]: Cannot find module '[...absolute path to project...]/node_modules/swig-cli/dist/esm/swigCli.js'".
+
+If this ends up happening in the future and isn't immediately obvious what the problem is, I can add some additional error handling to print out a friendlier error message.
+
 ## Why the CJS version?
 
 It turns out you can get around the fact that ESM can't dynamically import a typescript file by using commonjs instead (which it can do, surprisingly). This is how I'm getting away with not transpiling the typescript swigfile before importing it - I'm just using the CJS version of swig for this scenario. Sneaky. But may want to look into a more robust solution in case this doesn't work out in some scenarios.
