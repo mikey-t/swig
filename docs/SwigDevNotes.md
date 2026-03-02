@@ -50,16 +50,33 @@ Clean up:
 
 Note that unit tests rely on existing tasks defined in swigfiles within example project directories, so those must remain intact and unmodified (unless unit tests are also updated.)
 
-## Global vs Local Install
+## Global vs Local Install Version Mismatch
 
-Potential issues to be aware of with different global vs locally installed swig versions:
+When both a global and local version of swig-cli are installed, the following behavior applies:
 
-- Global swig will be called initially because it's in the PATH, but it's startup wrapper will call local swig via relative path: './node_modules/swig-cli/dist/esm/swigCli.js'
-- If path to swigCli.js in the dist folder is changed, it would require global and local versions to match
+- The global swig executable is resolved first (because it’s on PATH).
+- The global startup wrapper then delegates execution to the local project version via a relative path:
 
-It seems like reasonable behavior to prefer local version while still taking advantage of global wrapper script functionality/availability. These particular scenarios aren't too bad - if the path to swigCli didn't change between versions there will most likely be not problem at all. If that path does change, a relatively straight forward error will occur when it can't find the local script, for example: "Error [ERR_MODULE_NOT_FOUND]: Cannot find module '[...absolute path to project...]/node_modules/swig-cli/dist/esm/swigCli.js'".
+```
+./node_modules/swig-cli/dist/esm/swigCli.js
+```
+### Potential Issue
 
-If this ends up happening in the future and isn't immediately obvious what the problem is, I can add some additional error handling to print out a friendlier error message.
+If the internal path to swigCli.js changes between versions (e.g., directory structure or filename changes), a mismatch between the global and local versions may cause a runtime failure.
+
+In that case, execution will fail with an error similar to:
+
+```
+Error [ERR_MODULE_NOT_FOUND]: Cannot find module '<project>/node_modules/swig-cli/dist/esm/swigCli.js'
+```
+
+### Design Rationale
+
+This behavior intentionally prefers the local project version while still allowing the global executable to act as a stable entry point.
+
+In most cases, version mismatches are harmless as long as the internal file structure remains compatible. If the structure changes, the failure mode is explicit and relatively easy to diagnose.
+
+If this becomes confusing in practice, additional error handling can be added to detect this condition and emit a clearer, more actionable error message.
 
 ## Why the CJS version?
 
