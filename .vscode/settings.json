@@ -1,14 +1,13 @@
 {
-  "[javascript]": {
+  "[javascript][typescript]": {
     "editor.autoIndent": "full",
-    "editor.trimAutoWhitespace": false
-  },
-  "[typescript]": {
-    "editor.autoIndent": "full",
-    "editor.trimAutoWhitespace": false
+    "editor.trimAutoWhitespace": false,
+    "editor.insertSpaces": true,
+    "editor.tabSize": 2
   },
   "js/ts.preferences.quoteStyle": "single",
   "js/ts.format.semicolons": "remove",
+  "js/ts.preferences.importModuleSpecifier": "relative",
   "js/ts.tsserver.experimental.enableProjectDiagnostics":true,
   "cSpell.words": [
     "fsutil",
@@ -18,6 +17,5 @@
     "swigfiles",
     "TSNODE",
     "writability"
-  ],
-  "js/ts.preferences.importModuleSpecifier": "relative",
+  ]
 }
