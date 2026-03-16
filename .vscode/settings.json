@@ -8,7 +8,7 @@
   "js/ts.preferences.quoteStyle": "single",
   "js/ts.format.semicolons": "remove",
   "js/ts.preferences.importModuleSpecifier": "relative",
-  "js/ts.tsserver.experimental.enableProjectDiagnostics":true,
+  "js/ts.tsserver.experimental.enableProjectDiagnostics": true,
   "cSpell.words": [
     "fsutil",
     "howfat",
