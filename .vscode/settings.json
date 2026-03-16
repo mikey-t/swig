@@ -7,11 +7,9 @@
     "editor.autoIndent": "full",
     "editor.trimAutoWhitespace": false
   },
-  "javascript.preferences.quoteStyle": "single",
-  "typescript.preferences.quoteStyle": "single",
-  "javascript.format.semicolons": "remove",
-  "typescript.format.semicolons": "remove",
-  "typescript.tsserver.experimental.enableProjectDiagnostics": true,
+  "js/ts.preferences.quoteStyle": "single",
+  "js/ts.format.semicolons": "remove",
+  "js/ts.tsserver.experimental.enableProjectDiagnostics":true,
   "cSpell.words": [
     "fsutil",
     "howfat",
@@ -21,6 +19,5 @@
     "TSNODE",
     "writability"
   ],
-  "typescript.preferences.importModuleSpecifier": "relative",
-  "javascript.preferences.importModuleSpecifier": "relative"
+  "js/ts.preferences.importModuleSpecifier": "relative",
 }
