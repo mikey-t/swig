@@ -52,7 +52,6 @@ Many project types and javascript flavors will work, but typescript with tsx is 
         "node"
       ],
       "noEmit": true,
-      "baseUrl": ".",
       "rootDir": "."
     },
     "include": [
