@@ -26,7 +26,9 @@ const rollupConfigCjs = 'rollup.config.cjs.js'
 const tsconfigEsm = 'tsconfig.esm.json'
 const tsconfigCjs = 'tsconfig.cjs.json'
 const npmRegistryArg = '--registry=https://registry.npmjs.org/'
-const deleteNodeModulesSleepMillis = 250 // Sleeps are an attempt to avoid errors deleting esbuild.exe from node_modules
+// The deleteNodeModulesSleepMillis setting is an attempt to avoid errors deleting esbuild.exe from node_modules.
+// Also be sure that vscode is closed if errors are thrown related to esbuild.exe file deletion.
+const deleteNodeModulesSleepMillis = 250 
 const deleteNodeModulesRetries = 5
 const usePnpmLoglevelError = true
 const pnpmLoglevelArgs = usePnpmLoglevelError ? ['--loglevel', 'error'] : []
